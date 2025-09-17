@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hitch_tracker/src/home_desktop_page.dart';
+import 'package:hitch_tracker/src/res/app_constants.dart';
 
 void main() {
   runApp(const MyApp());
@@ -12,9 +13,10 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Hitch Admin Panel',
+      title: appTitle,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.white),
+        fontFamily: appFontFamilyMontserrat
       ),
       home: Scaffold(
         body: HomeDesktopPage()
