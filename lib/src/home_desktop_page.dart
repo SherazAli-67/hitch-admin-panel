@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:hitch_tracker/src/providers/main_menu_tabchange_provider.dart';
+import 'package:hitch_tracker/src/res/app_colors.dart';
 import 'package:hitch_tracker/src/res/app_textstyles.dart';
+import 'package:provider/provider.dart';
 
 class HomeDesktopPage extends StatelessWidget{
   const HomeDesktopPage({super.key});
@@ -23,16 +26,21 @@ class HomeDesktopPage extends StatelessWidget{
             Expanded(
               child: Row(
                 children: [
-                  Column(
-                    spacing: 20,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildMenuItemWidget(icon: Icons.home_outlined, title: "Dashboard", onTap: (){}),
-                      _buildMenuItemWidget(icon: Icons.person, title: "Users", onTap: (){}),
-                      _buildMenuItemWidget(icon: Icons.request_page, title: "Requests", onTap: (){}),
-                      _buildMenuItemWidget(icon: Icons.chat_bubble_outline_rounded, title: "Chats", onTap: (){}),
+                  Consumer<MainMenUTabChangeProvider>(
+                    builder: (_, provider, _) {
+                      int selectedIndex = provider.currentIndex;
+                      return Column(
+                        spacing: 20,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildMenuItemWidget(icon: Icons.home_outlined, title: "Dashboard", onTap: (){}, tabIndex: 0, selectedIndex: selectedIndex, provider: provider),
+                          _buildMenuItemWidget(icon: Icons.person, title: "Users", onTap: (){},  tabIndex: 1, selectedIndex: selectedIndex,  provider: provider),
+                          _buildMenuItemWidget(icon: Icons.request_page, title: "Requests", onTap: (){},  tabIndex: 2, selectedIndex: selectedIndex,  provider: provider),
+                          _buildMenuItemWidget(icon: Icons.chat_bubble_outline_rounded, title: "Chats", onTap: (){},  tabIndex: 3, selectedIndex: selectedIndex,  provider: provider),
 
-                    ],
+                        ],
+                      );
+                    }
                   )
                 ],
               ),
@@ -43,10 +51,11 @@ class HomeDesktopPage extends StatelessWidget{
     );
   }
 
-  Widget _buildMenuItemWidget({required IconData icon, required String title, required VoidCallback onTap}) {
+  Widget _buildMenuItemWidget({required IconData icon, required String title, required VoidCallback onTap, required int selectedIndex, required int tabIndex, required MainMenUTabChangeProvider provider}) {
+    bool isSelected = tabIndex == selectedIndex;
     return ElevatedButton(
         style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.white,
+            backgroundColor: isSelected ? AppColors.textFieldFillColor : Colors.white,
             // elevation: 0,
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(5)
@@ -54,8 +63,9 @@ class HomeDesktopPage extends StatelessWidget{
             foregroundColor: Colors.white,
             elevation: 0
         ),
-        onPressed: () {}, child: Row(
+        onPressed: () => provider.onTabChange(tabIndex), child: Row(
       spacing: 10,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(icon, color: Colors.black45,),
         Text(title,

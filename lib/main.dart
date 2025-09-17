@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:hitch_tracker/src/home_desktop_page.dart';
+import 'package:hitch_tracker/src/providers/main_menu_tabchange_provider.dart';
 import 'package:hitch_tracker/src/res/app_constants.dart';
+import 'package:provider/provider.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(MultiProvider(providers: [
+    ChangeNotifierProvider(create: (_)=> MainMenUTabChangeProvider())
+  ], child: const MyApp(),));
 }
 
 class MyApp extends StatelessWidget {
