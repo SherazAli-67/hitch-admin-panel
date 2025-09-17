@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:hitch_tracker/src/features/chats_page.dart';
+import 'package:hitch_tracker/src/features/dashboard_page.dart';
+import 'package:hitch_tracker/src/features/requests_page.dart';
+import 'package:hitch_tracker/src/features/users_page.dart';
 import 'package:hitch_tracker/src/providers/main_menu_tabchange_provider.dart';
 import 'package:hitch_tracker/src/res/app_colors.dart';
 import 'package:hitch_tracker/src/res/app_textstyles.dart';
@@ -24,25 +28,30 @@ class HomeDesktopPage extends StatelessWidget{
               ],
             ),
             Expanded(
-              child: Row(
-                children: [
-                  Consumer<MainMenUTabChangeProvider>(
-                    builder: (_, provider, _) {
-                      int selectedIndex = provider.currentIndex;
-                      return Column(
-                        spacing: 20,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildMenuItemWidget(icon: Icons.home_outlined, title: "Dashboard", onTap: (){}, tabIndex: 0, selectedIndex: selectedIndex, provider: provider),
-                          _buildMenuItemWidget(icon: Icons.person, title: "Users", onTap: (){},  tabIndex: 1, selectedIndex: selectedIndex,  provider: provider),
-                          _buildMenuItemWidget(icon: Icons.request_page, title: "Requests", onTap: (){},  tabIndex: 2, selectedIndex: selectedIndex,  provider: provider),
-                          _buildMenuItemWidget(icon: Icons.chat_bubble_outline_rounded, title: "Chats", onTap: (){},  tabIndex: 3, selectedIndex: selectedIndex,  provider: provider),
+              child: Consumer<MainMenUTabChangeProvider>(
+                builder: (_, provider, _) {
+                  int selectedIndex = provider.currentIndex;
+                  return Row(
+                    spacing: 20,
+                    children: [
+                      SizedBox(
+                        width: 200,
+                        child: Column(
+                          spacing: 20,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildMenuItemWidget(icon: Icons.home_outlined, title: "Dashboard", onTap: (){}, tabIndex: 0, selectedIndex: selectedIndex, provider: provider),
+                            _buildMenuItemWidget(icon: Icons.person, title: "Users", onTap: (){},  tabIndex: 1, selectedIndex: selectedIndex,  provider: provider),
+                            _buildMenuItemWidget(icon: Icons.request_page, title: "Requests", onTap: (){},  tabIndex: 2, selectedIndex: selectedIndex,  provider: provider),
+                            _buildMenuItemWidget(icon: Icons.chat_bubble_outline_rounded, title: "Chats", onTap: (){},  tabIndex: 3, selectedIndex: selectedIndex,  provider: provider),
 
-                        ],
-                      );
-                    }
-                  )
-                ],
+                          ],
+                        )
+                      ),
+                      Expanded(child: _buildMenuPageWidget(selectedIndex))
+                    ],
+                  );
+                }
               ),
             )
           ],
@@ -72,6 +81,22 @@ class HomeDesktopPage extends StatelessWidget{
           style: AppTextStyles.smallTextStyle.copyWith(color: Colors.black),)
       ],
     ));
+  }
+
+  _buildMenuPageWidget(int selectedIndex) {
+    switch(selectedIndex){
+      case 0:
+        return DashboardPage();
+
+      case 1:
+        return UsersPage();
+
+      case 2:
+        return RequestsPage();
+
+      case 3:
+        return ChatsPage();
+    }
   }
 
 }

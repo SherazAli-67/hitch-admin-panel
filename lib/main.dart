@@ -20,7 +20,8 @@ class MyApp extends StatelessWidget {
       title: appTitle,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.white),
-        fontFamily: appFontFamilyMontserrat
+        fontFamily: appFontFamilyMontserrat,
+        scaffoldBackgroundColor: Colors.white
       ),
       home: Scaffold(
         body: HomeDesktopPage()
