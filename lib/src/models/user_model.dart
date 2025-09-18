@@ -1,9 +1,8 @@
-import 'package:hitch/src/models/coach_experience_model.dart';
-import 'package:hitch/src/models/uploaded_file_model.dart';
-
 import '../res/string_constants.dart';
+import 'coach_experience_model.dart';
 import 'player_level_model.dart';
-import 'package:timeago/timeago.dart' as timeago;
+
+import 'uploaded_file_model.dart';
 
 class UserModel {
   String userID;
@@ -52,7 +51,8 @@ class UserModel {
       return '';
     }
     DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(lastActive!);
-    return timeago.format(dateTime, locale: 'en').replaceAll('about ', '');
+    return dateTime.toString();
+    // return timeago.format(dateTime, locale: 'en').replaceAll('about ', '');
   }
 
   UserModel(
