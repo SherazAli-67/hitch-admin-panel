@@ -47,5 +47,12 @@ class HitchCountProvider extends ChangeNotifier{
     _totalHitchRequests = result[2];
     _totalHitchAcceptedRequests = result[3];
     notifyListeners();
+
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setInt(_totalUsersKey, _totalUsers);
+    prefs.setInt(_totalHitchChatsKey, _totalChats);
+    prefs.setInt(_totalHitchRequestsKey, _totalHitchRequests);
+    prefs.setInt(_totalHitchAcceptedKey, _totalHitchAcceptedRequests);
+
   }
 }
