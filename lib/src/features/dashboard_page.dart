@@ -19,12 +19,16 @@ class _DashboardPageState extends State<DashboardPage> {
   final ScrollController _scrollController = ScrollController();
   
   List<UserModel> _users = [];
-  List<UserModel> _filteredUsers = [];
+  List<UserModel> _searchResults = [];
   bool _isLoading = false;
+  bool _isSearching = false;
   bool _hasMoreData = true;
+  bool _hasMoreSearchResults = true;
   DocumentSnapshot? _lastDocument;
+  DocumentSnapshot? _lastSearchDocument;
   Timer? _debounceTimer;
   String _searchQuery = '';
+  bool _isInSearchMode = false;
   
   static const int _pageSize = 20;
 
@@ -46,8 +50,14 @@ class _DashboardPageState extends State<DashboardPage> {
 
   void _onScroll() {
     if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent * 0.8) {
-      if (!_isLoading && _hasMoreData && _searchQuery.isEmpty) {
-        _loadMoreUsers();
+      if (_isInSearchMode) {
+        if (!_isSearching && _hasMoreSearchResults) {
+          _loadMoreSearchResults();
+        }
+      } else {
+        if (!_isLoading && _hasMoreData) {
+          _loadMoreUsers();
+        }
       }
     }
   }
@@ -55,10 +65,12 @@ class _DashboardPageState extends State<DashboardPage> {
   void _onSearchChanged() {
     if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+      final newQuery = _searchController.text.trim();
       setState(() {
-        _searchQuery = _searchController.text.trim();
+        _searchQuery = newQuery;
+        _isInSearchMode = newQuery.isNotEmpty;
       });
-      _performSearch();
+      _performFirebaseSearch();
     });
   }
 
@@ -118,22 +130,113 @@ class _DashboardPageState extends State<DashboardPage> {
     await _loadUsers();
   }
 
-  void _performSearch() {
+  Future<void> _performFirebaseSearch() async {
     if (_searchQuery.isEmpty) {
       setState(() {
-        _filteredUsers = _users;
+        _isInSearchMode = false;
+        _searchResults.clear();
+        _lastSearchDocument = null;
+        _hasMoreSearchResults = true;
       });
       return;
     }
 
+    if (_searchQuery.length < 2) {
+      // Don't search for queries less than 2 characters
+      return;
+    }
+
     setState(() {
-      _filteredUsers = _users.where((user) {
-        final query = _searchQuery.toLowerCase();
-        return user.userName.toLowerCase().contains(query) ||
-               user.bio.toLowerCase().contains(query) ||
-               (user.emailAddress.toLowerCase().contains(query));
-      }).toList();
+      _isSearching = true;
+      _searchResults.clear();
+      _lastSearchDocument = null;
+      _hasMoreSearchResults = true;
     });
+
+    await _searchInFirebase(_searchQuery);
+  }
+
+  Future<void> _searchInFirebase(String query) async {
+    try {
+      final String queryLower = query.toLowerCase();
+      final String queryEnd = queryLower + '\uf8ff'; // End character for range queries
+      
+      // Search by userName (primary search)
+      Query searchQuery = _firestore
+          .collection('users')
+          .orderBy('userName')
+          .where('userName', isGreaterThanOrEqualTo: query)
+          .where('userName', isLessThan: query + '\uf8ff')
+          .limit(_pageSize);
+
+      if (_lastSearchDocument != null) {
+        searchQuery = searchQuery.startAfterDocument(_lastSearchDocument!);
+      }
+
+      final QuerySnapshot snapshot = await searchQuery.get();
+      List<UserModel> results = [];
+      
+      if (snapshot.docs.isNotEmpty) {
+        results = snapshot.docs
+            .map((doc) => UserModel.fromMap(doc.data() as Map<String, dynamic>))
+            .toList();
+        
+        _lastSearchDocument = snapshot.docs.last;
+      }
+
+      // If we don't have enough results from userName search, search bio field
+      if (results.length < 10 && _lastSearchDocument == null) {
+        await _searchBioField(queryLower, results);
+      }
+
+      setState(() {
+        if (_lastSearchDocument == null || _searchResults.isEmpty) {
+          _searchResults = results;
+        } else {
+          _searchResults.addAll(results);
+        }
+        _hasMoreSearchResults = snapshot.docs.length == _pageSize;
+        _isSearching = false;
+      });
+
+    } catch (e) {
+      setState(() {
+        _isSearching = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Search error: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _searchBioField(String queryLower, List<UserModel> existingResults) async {
+    try {
+      // Search in bio field for additional results
+      final QuerySnapshot bioSnapshot = await _firestore
+          .collection('users')
+          .where('bio', isGreaterThanOrEqualTo: queryLower)
+          .where('bio', isLessThan: queryLower + '\uf8ff')
+          .limit(_pageSize - existingResults.length)
+          .get();
+
+      if (bioSnapshot.docs.isNotEmpty) {
+        final bioResults = bioSnapshot.docs
+            .map((doc) => UserModel.fromMap(doc.data() as Map<String, dynamic>))
+            .where((user) => !existingResults.any((existing) => existing.userID == user.userID))
+            .toList();
+        
+        existingResults.addAll(bioResults);
+      }
+    } catch (e) {
+      debugPrint('Bio search error: $e');
+    }
+  }
+
+  Future<void> _loadMoreSearchResults() async {
+    if (_isSearching || !_hasMoreSearchResults) return;
+    await _searchInFirebase(_searchQuery);
   }
 
   Future<void> _refreshUsers() async {
