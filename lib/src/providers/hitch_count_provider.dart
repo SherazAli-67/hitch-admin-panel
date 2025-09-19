@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hitch_tracker/src/service/hitches_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class HitchCountProvider extends ChangeNotifier{
@@ -11,6 +12,12 @@ class HitchCountProvider extends ChangeNotifier{
   int _totalHitchRequests = 1;
   int _totalChats = 1;
   int _totalHitchAcceptedRequests = 1;
+
+
+  int get totalUsers => _totalUsers;
+  int get totalChats => _totalChats;
+  int get totalHitchRequests => _totalHitchRequests;
+  int get totalHitchAccepted => _totalHitchAcceptedRequests;
 
   HitchCountProvider(){
     _initHitchCount();
@@ -27,8 +34,18 @@ class HitchCountProvider extends ChangeNotifier{
     _initFromNetwork();
   }
 
-  void _initFromNetwork() {
+  void _initFromNetwork() async{
+    final result = await Future.wait([
+      HitchesService.getTotalUsersCount(),
+      HitchesService.getTotalChatsCount(),
+      HitchesService.getTotalHitchRequestCount(),
+      HitchesService.getTotalHitchAcceptedCount(),
+    ]);
 
-
+    _totalUsers = result.first;
+    _totalChats = result[1];
+    _totalHitchRequests = result[2];
+    _totalHitchAcceptedRequests = result[3];
+    notifyListeners();
   }
 }
