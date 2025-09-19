@@ -56,46 +56,55 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      spacing: 20,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Consumer<HitchCountProvider>(
-          builder: (_, provider,_) {
-            return Row(
-              spacing: 20,
-              children: [
-                Expanded(
-                  child: _buildInfoItemWidget(
-                    title: 'Users',
-                    value: provider.totalUsers
-                  ),
-                ),
-                Expanded(
-                  child: _buildInfoItemWidget(title: 'Requested Hitches', value: provider.totalHitchRequests),
-                ),
-                Expanded(
-                  child: _buildInfoItemWidget(title: 'Accepted Hitches', value: provider.totalHitchAccepted),
-                ),
-
-                Expanded(
-                  child: _buildInfoItemWidget(title: 'Chats', value: provider.totalChats),
-                ),
-              ],
-            );
-          }
-        ),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            spacing: 10,
-            children: [
-              Text("Users", style: AppTextStyles.headingTextStyle),
-              _buildSearchTextField(),
-              _buildUsersList()
-            ],
+    return CustomScrollView(
+      controller: _scrollController,
+      slivers: [
+        // Stats section
+        SliverPadding(
+          padding: const EdgeInsets.only(bottom: 20),
+          sliver: SliverToBoxAdapter(
+            child: Consumer<HitchCountProvider>(
+              builder: (_, provider,_) {
+                return Row(
+                  spacing: 20,
+                  children: [
+                    Expanded(
+                      child: _buildInfoItemWidget(
+                        title: 'Users',
+                        value: provider.totalUsers
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildInfoItemWidget(title: 'Requested Hitches', value: provider.totalHitchRequests),
+                    ),
+                    Expanded(
+                      child: _buildInfoItemWidget(title: 'Accepted Hitches', value: provider.totalHitchAccepted),
+                    ),
+                    Expanded(
+                      child: _buildInfoItemWidget(title: 'Chats', value: provider.totalChats),
+                    ),
+                  ],
+                );
+              }
+            ),
           ),
-        )
+        ),
+        // Users section header
+        SliverPadding(
+          padding: const EdgeInsets.only(bottom: 10),
+          sliver: SliverToBoxAdapter(
+            child: Text("Users", style: AppTextStyles.headingTextStyle),
+          ),
+        ),
+        // Search field
+        SliverPadding(
+          padding: const EdgeInsets.only(bottom: 10),
+          sliver: SliverToBoxAdapter(
+            child: _buildSearchTextField(),
+          ),
+        ),
+        // Users list
+        _buildUsersSliver(),
       ],
     );
   }
