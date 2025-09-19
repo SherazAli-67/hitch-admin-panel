@@ -2,16 +2,12 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:hitch_tracker/src/models/hitch_tracker_model.dart';
-import 'package:hitch_tracker/src/models/user_model.dart';
 import 'package:hitch_tracker/src/providers/hitch_count_provider.dart';
 import 'package:hitch_tracker/src/res/app_colors.dart';
 import 'package:hitch_tracker/src/res/app_textstyles.dart';
-import 'package:hitch_tracker/src/service/hitches_service.dart';
 import 'dart:async';
-
 import 'package:provider/provider.dart';
 
-import '../widgets/table_item_widget.dart';
 
 class RequestedHitchesPage extends StatefulWidget {
   const RequestedHitchesPage({super.key});
@@ -66,47 +62,15 @@ class _RequestedHitchesPageState extends State<RequestedHitchesPage> {
         SliverPadding(
           padding: const EdgeInsets.only(bottom: 20),
           sliver: SliverToBoxAdapter(
-            child: Consumer<HitchCountProvider>(
-                builder: (_, provider,_) {
-                  return Row(
-                    spacing: 20,
-                    children: [
-                      Expanded(
-                        child: _buildInfoItemWidget(
-                            title: 'Users',
-                            value: provider.totalUsers
-                        ),
-                      ),
-                      Expanded(
-                        child: _buildInfoItemWidget(title: 'Requested Hitches', value: provider.totalHitchRequests),
-                      ),
-                      Expanded(
-                        child: _buildInfoItemWidget(title: 'Accepted Hitches', value: provider.totalHitchAccepted),
-                      ),
-                      Expanded(
-                        child: _buildInfoItemWidget(title: 'Chats', value: provider.totalChats),
-                      ),
-                    ],
-                  );
-                }
-            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("Hitch Requests", style: AppTextStyles.largeTextStyle,),
+                Text("Manage Hitch requests", style: AppTextStyles.smallTextStyle,)
+              ],
+            )
           ),
         ),
-        // Users section header
-        SliverPadding(
-          padding: const EdgeInsets.only(bottom: 10),
-          sliver: SliverToBoxAdapter(
-            child: Text("Users", style: AppTextStyles.headingTextStyle),
-          ),
-        ),
-        // Search field
-        /*SliverPadding(
-          padding: const EdgeInsets.only(bottom: 10),
-          sliver: SliverToBoxAdapter(
-            child: _buildSearchTextField(),
-          ),
-        ),*/
-        // Users list
         _buildUsersSliver(),
       ],
     );
@@ -164,7 +128,7 @@ class _RequestedHitchesPageState extends State<RequestedHitchesPage> {
       );
     }
 
-    return Container(
+    return SizedBox(
       width: double.infinity,
       child: DataTable(
         columnSpacing: 16,
@@ -532,13 +496,11 @@ class _RequestedHitchesPageState extends State<RequestedHitchesPage> {
   Future<void> _loadUsers() async {
     if (_isLoading) return;
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(()=> _isLoading = true);
 
     try {
       Query query = _firestore
-          .collection('hitches_tracker').doc('hitch_tracker_doc').collection('users')
+          .collection('hitches_tracker').doc('hitch_tracker_doc').collection('users').orderBy('hitchesCount', descending: true)
           .limit(_pageSize);
 
       if (_lastDocument != null) {
