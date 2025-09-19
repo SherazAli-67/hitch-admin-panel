@@ -1,5 +1,6 @@
 const appTitle = 'Hitch Admin';
 const appFontFamilyMontserrat ='Montserrat';
+
 // const appFontFamilyJakartaSans ='PlusJakartaSans';
 //
 // const onboardingTitle1 = 'Now reading books will be easier';

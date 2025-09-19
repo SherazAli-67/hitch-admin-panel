@@ -5,6 +5,7 @@ import 'package:hitch_tracker/src/models/user_model.dart';
 import 'package:hitch_tracker/src/providers/hitch_count_provider.dart';
 import 'package:hitch_tracker/src/res/app_colors.dart';
 import 'package:hitch_tracker/src/res/app_textstyles.dart';
+import 'package:hitch_tracker/src/service/hitches_service.dart';
 import 'dart:async';
 
 import 'package:provider/provider.dart';
@@ -182,10 +183,15 @@ class _DashboardPageState extends State<DashboardPage> {
                         style: AppTextStyles.regularTextStyle.copyWith(fontWeight: FontWeight.w600)
                       ),
                       if (user.latitude != null && user.longitude != null)
-                        Text(
-                          "Lat: ${user.latitude!.toStringAsFixed(2)}, Lng: ${user.longitude!.toStringAsFixed(2)}",
-                          style: AppTextStyles.smallTextStyle,
-                        ),
+                        FutureBuilder(future: HitchesService.getUserLocationFromLatLng(user.latitude!, user.longitude!), builder: (_, snapshot){
+                          if(snapshot.hasData){
+                            return Text(
+                              snapshot.requireData,
+                              style: AppTextStyles.smallTextStyle,
+                            );
+                          }
+                          return SizedBox();
+                        }),
                       if (user.bio.isNotEmpty)
                         Text(
                           user.bio,

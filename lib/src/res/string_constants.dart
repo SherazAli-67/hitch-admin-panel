@@ -1,4 +1,4 @@
-
+const googleAPIKey ='AIzaSyCk1OL8EZAU8L4aVXFi3v16ocGDI0mcwVY';
 const matchTypeKey = 'matchType';
 const genderTypeKey ='genderType';
 const availableDaysToPlayKey = 'availableDaysToPlay';
