@@ -84,7 +84,6 @@ class _DashboardPageState extends State<DashboardPage> {
     try {
       Query query = _firestore
           .collection('users')
-          // .orderBy('userName')
           .limit(_pageSize);
 
       if (_lastDocument != null) {
@@ -106,7 +105,6 @@ class _DashboardPageState extends State<DashboardPage> {
           }
           _lastDocument = snapshot.docs.last;
           _hasMoreData = snapshot.docs.length == _pageSize;
-          _filteredUsers = _users;
         });
       } else {
         setState(() {
@@ -114,11 +112,8 @@ class _DashboardPageState extends State<DashboardPage> {
         });
       }
     } catch (e) {
-      /*if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading users: $e')),
-        );
-      }*/
+      // Handle error silently for now
+      debugPrint('Error loading users: $e');
     } finally {
       setState(() {
         _isLoading = false;
@@ -159,7 +154,6 @@ class _DashboardPageState extends State<DashboardPage> {
   Future<void> _searchInFirebase(String query) async {
     try {
       final String queryLower = query.toLowerCase();
-      final String queryEnd = queryLower + '\uf8ff'; // End character for range queries
       
       // Search by userName (primary search)
       Query searchQuery = _firestore
@@ -240,13 +234,23 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Future<void> _refreshUsers() async {
-    setState(() {
-      _users.clear();
-      _filteredUsers.clear();
-      _lastDocument = null;
-      _hasMoreData = true;
-    });
-    await _loadUsers();
+    if (_isInSearchMode) {
+      // Refresh search results
+      setState(() {
+        _searchResults.clear();
+        _lastSearchDocument = null;
+        _hasMoreSearchResults = true;
+      });
+      await _performFirebaseSearch();
+    } else {
+      // Refresh normal user list
+      setState(() {
+        _users.clear();
+        _lastDocument = null;
+        _hasMoreData = true;
+      });
+      await _loadUsers();
+    }
   }
 
   @override
@@ -259,7 +263,10 @@ class _DashboardPageState extends State<DashboardPage> {
           spacing: 20,
           children: [
             Expanded(
-              child: _buildInfoItemWidget(title: 'Users', value: _users.length),
+              child: _buildInfoItemWidget(
+                title: 'Users', 
+                value: _isInSearchMode ? _searchResults.length : _users.length
+              ),
             ),
             Expanded(
               child: _buildInfoItemWidget(title: 'Requests', value: 2052),
@@ -285,6 +292,10 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Expanded _buildUsersList() {
+    final currentUsers = _isInSearchMode ? _searchResults : _users;
+    final isCurrentlyLoading = _isInSearchMode ? _isSearching : _isLoading;
+    final hasMore = _isInSearchMode ? _hasMoreSearchResults : _hasMoreData;
+
     return Expanded(
       child: Card(
         elevation: 1,
@@ -294,17 +305,17 @@ class _DashboardPageState extends State<DashboardPage> {
         color: Colors.white,
         child: RefreshIndicator(
           onRefresh: _refreshUsers,
-          child: _filteredUsers.isEmpty && !_isLoading
+          child: currentUsers.isEmpty && !isCurrentlyLoading
               ? _buildEmptyState()
               : ListView.builder(
                   controller: _scrollController,
-                  itemCount: _filteredUsers.length + (_isLoading || _hasMoreData ? 1 : 0),
+                  itemCount: currentUsers.length + (isCurrentlyLoading || hasMore ? 1 : 0),
                   itemBuilder: (ctx, index) {
-                    if (index == _filteredUsers.length) {
+                    if (index == currentUsers.length) {
                       return _buildLoadingIndicator();
                     }
                     
-                    final user = _filteredUsers[index];
+                    final user = currentUsers[index];
                     return _buildUserItem(user);
                   },
                 ),
@@ -446,7 +457,7 @@ class _DashboardPageState extends State<DashboardPage> {
         ),
         fillColor: AppColors.textFieldFillColor,
         filled: true,
-        hintText: "Search users by name, bio, or email",
+        hintText: "Search users by name or bio (Firebase search)",
         hintStyle: AppTextStyles.smallTextStyle.copyWith(color: Colors.grey),
         prefixIcon: const Icon(Icons.search_sharp, color: Colors.grey),
         suffixIcon: _searchQuery.isNotEmpty
