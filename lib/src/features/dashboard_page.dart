@@ -109,34 +109,42 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Expanded _buildUsersList() {
+  Widget _buildUsersSliver() {
     final currentUsers = _isInSearchMode ? _searchResults : _users;
     final isCurrentlyLoading = _isInSearchMode ? _isSearching : _isLoading;
     final hasMore = _isInSearchMode ? _hasMoreSearchResults : _hasMoreData;
 
-    return Expanded(
+    if (currentUsers.isEmpty && !isCurrentlyLoading) {
+      return SliverToBoxAdapter(
+        child: Card(
+          elevation: 1,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(5)
+          ),
+          color: Colors.white,
+          child: Container(
+            height: 400, // Fixed height for empty state
+            child: _buildEmptyState(),
+          ),
+        ),
+      );
+    }
+
+    return SliverToBoxAdapter(
       child: Card(
         elevation: 1,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(5)
         ),
         color: Colors.white,
-        child: RefreshIndicator(
-          onRefresh: _refreshUsers,
-          child: currentUsers.isEmpty && !isCurrentlyLoading
-              ? _buildEmptyState()
-              : ListView.builder(
-                  controller: _scrollController,
-                  itemCount: currentUsers.length + (isCurrentlyLoading || hasMore ? 1 : 0),
-                  itemBuilder: (ctx, index) {
-                    if (index == currentUsers.length) {
-                      return _buildLoadingIndicator();
-                    }
-                    
-                    final user = currentUsers[index];
-                    return _buildUserItem(user);
-                  },
-                ),
+        child: Column(
+          children: [
+            // User items
+            ...currentUsers.map((user) => _buildUserItem(user)).toList(),
+            // Loading indicator
+            if (isCurrentlyLoading || hasMore)
+              _buildLoadingIndicator(),
+          ],
         ),
       ),
     );
