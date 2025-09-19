@@ -164,61 +164,75 @@ class _RequestedHitchesPageState extends State<RequestedHitchesPage> {
       );
     }
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
+    return Container(
+      width: double.infinity,
       child: DataTable(
-        columnSpacing: 20,
-        horizontalMargin: 16,
-        headingRowColor: WidgetStateProperty.all(Colors.greenAccent),
+        columnSpacing: 16,
+        horizontalMargin: 0,
+        headingRowColor: WidgetStateProperty.all(AppColors.textFieldFillColor),
         headingRowHeight: 56,
         dataRowMinHeight: 72,
         dataRowMaxHeight: 72,
-
         border: TableBorder.all(
           color: Colors.grey[300]!,
           width: 1,
         ),
         columns: [
-          
           DataColumn(
-            label:TableItemWidget(text: 'Profile')
-          /*  Text(
-              'Profile',
-              style: AppTextStyles.regularTextStyle.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),*/
-          ),
-          DataColumn(
-            label: Text(
-              'User Name',
-              style: AppTextStyles.regularTextStyle.copyWith(
-                fontWeight: FontWeight.w600,
+            label: SizedBox(
+              width: 80,
+              child: Text(
+                'Profile',
+                style: AppTextStyles.regularTextStyle.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
               ),
             ),
           ),
           DataColumn(
-            label: Text(
-              'Bio',
-              style: AppTextStyles.regularTextStyle.copyWith(
-                fontWeight: FontWeight.w600,
+            label: Expanded(
+              flex: 2,
+              child: Text(
+                'User Name',
+                style: AppTextStyles.regularTextStyle.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ),
           DataColumn(
-            label: Text(
-              'Hitches Count',
-              style: AppTextStyles.regularTextStyle.copyWith(
-                fontWeight: FontWeight.w600,
+            label: Expanded(
+              flex: 3,
+              child: Text(
+                'Bio',
+                style: AppTextStyles.regularTextStyle.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+          DataColumn(
+            label: SizedBox(
+              width: 100,
+              child: Text(
+                'Hitches Count',
+                style: AppTextStyles.regularTextStyle.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
               ),
             ),
             numeric: true,
           ),
           DataColumn(
-            label: Text(
-              'User ID',
-              style: AppTextStyles.regularTextStyle.copyWith(
-                fontWeight: FontWeight.w600,
+            label: Expanded(
+              flex: 2,
+              child: Text(
+                'User ID',
+                style: AppTextStyles.regularTextStyle.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ),
@@ -232,38 +246,38 @@ class _RequestedHitchesPageState extends State<RequestedHitchesPage> {
     return DataRow(
       cells: [
         DataCell(
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: AppColors.textFieldFillColor,
-            backgroundImage: user.profilePicture.isNotEmpty
-                ? CachedNetworkImageProvider(user.profilePicture)
-                : null,
-            child: user.profilePicture.isEmpty
-                ? Text(
-                    user.userName.isNotEmpty ? user.userName[0].toUpperCase() : '?',
-                    style: AppTextStyles.regularTextStyle.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primaryColor,
-                    ),
-                  )
-                : null,
-          ),
-        ),
-        DataCell(
-          Expanded(
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 150),
-              child: Text(
-                user.userName.isNotEmpty ? user.userName : 'Unknown User',
-                style: AppTextStyles.regularTextStyle,
-                overflow: TextOverflow.ellipsis,
-              ),
+          Center(
+            child: CircleAvatar(
+              radius: 20,
+              backgroundColor: AppColors.textFieldFillColor,
+              backgroundImage: user.profilePicture.isNotEmpty
+                  ? CachedNetworkImageProvider(user.profilePicture)
+                  : null,
+              child: user.profilePicture.isEmpty
+                  ? Text(
+                      user.userName.isNotEmpty ? user.userName[0].toUpperCase() : '?',
+                      style: AppTextStyles.regularTextStyle.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primaryColor,
+                      ),
+                    )
+                  : null,
             ),
           ),
         ),
         DataCell(
-          Container(
-            constraints: const BoxConstraints(maxWidth: 200),
+          SizedBox(
+            width: double.infinity,
+            child: Text(
+              user.userName.isNotEmpty ? user.userName : 'Unknown User',
+              style: AppTextStyles.regularTextStyle,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ),
+        DataCell(
+          SizedBox(
+            width: double.infinity,
             child: Text(
               user.bio.isNotEmpty ? user.bio : 'No bio available',
               style: AppTextStyles.smallTextStyle.copyWith(color: Colors.grey[600]),
@@ -273,17 +287,19 @@ class _RequestedHitchesPageState extends State<RequestedHitchesPage> {
           ),
         ),
         DataCell(
-          Text(
-            user.hitchesCount.toString(),
-            style: AppTextStyles.regularTextStyle.copyWith(
-              fontWeight: FontWeight.w600,
-              color: AppColors.primaryColor,
+          Center(
+            child: Text(
+              user.hitchesCount.toString(),
+              style: AppTextStyles.regularTextStyle.copyWith(
+                fontWeight: FontWeight.w600,
+                color: AppColors.primaryColor,
+              ),
             ),
           ),
         ),
         DataCell(
-          Container(
-            constraints: const BoxConstraints(maxWidth: 120),
+          SizedBox(
+            width: double.infinity,
             child: Text(
               user.userID,
               style: AppTextStyles.smallTextStyle.copyWith(color: Colors.grey[600]),
