@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:hitch_tracker/src/features/chats_page.dart';
 import 'package:hitch_tracker/src/features/dashboard_page.dart';
-import 'package:hitch_tracker/src/features/requests_page.dart';
-import 'package:hitch_tracker/src/features/users_page.dart';
+import 'package:hitch_tracker/src/features/requested_hitches_page.dart';
+import 'package:hitch_tracker/src/features/accepted_hitch_users.dart';
 import 'package:hitch_tracker/src/providers/main_menu_tabchange_provider.dart';
 import 'package:hitch_tracker/src/res/app_colors.dart';
 import 'package:hitch_tracker/src/res/app_textstyles.dart';
@@ -35,14 +35,14 @@ class HomeDesktopPage extends StatelessWidget{
                     spacing: 20,
                     children: [
                       SizedBox(
-                        width: 200,
+                        width: 250,
                         child: Column(
                           spacing: 20,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             _buildMenuItemWidget(icon: Icons.home_outlined, title: "Dashboard", onTap: (){}, tabIndex: 0, selectedIndex: selectedIndex, provider: provider),
-                            _buildMenuItemWidget(icon: Icons.person, title: "Users", onTap: (){},  tabIndex: 1, selectedIndex: selectedIndex,  provider: provider),
-                            _buildMenuItemWidget(icon: Icons.request_page, title: "Requests", onTap: (){},  tabIndex: 2, selectedIndex: selectedIndex,  provider: provider),
+                            _buildMenuItemWidget(icon: Icons.person, title: "Requested Hitches", onTap: (){},  tabIndex: 1, selectedIndex: selectedIndex,  provider: provider),
+                            _buildMenuItemWidget(icon: Icons.request_page, title: "Accepted Hitches", onTap: (){},  tabIndex: 2, selectedIndex: selectedIndex,  provider: provider),
                             _buildMenuItemWidget(icon: Icons.chat_bubble_outline_rounded, title: "Chats", onTap: (){},  tabIndex: 3, selectedIndex: selectedIndex,  provider: provider),
 
                           ],
@@ -77,8 +77,10 @@ class HomeDesktopPage extends StatelessWidget{
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(icon, color: Colors.black45,),
-        Text(title,
-          style: AppTextStyles.smallTextStyle.copyWith(color: Colors.black),)
+        Expanded(
+          child: Text(title,
+            style: AppTextStyles.smallTextStyle.copyWith(color: Colors.black),),
+        )
       ],
     ));
   }
@@ -89,10 +91,10 @@ class HomeDesktopPage extends StatelessWidget{
         return DashboardPage();
 
       case 1:
-        return UsersPage();
+        return RequestedHitchesPage();
 
       case 2:
-        return RequestsPage();
+        return AcceptedHitchUsers();
 
       case 3:
         return ChatsPage();
