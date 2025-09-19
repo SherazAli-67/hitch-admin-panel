@@ -72,7 +72,7 @@ class _DashboardPageState extends State<DashboardPage> {
     try {
       Query query = _firestore
           .collection('users')
-          .orderBy('userName')
+          // .orderBy('userName')
           .limit(_pageSize);
 
       if (_lastDocument != null) {
@@ -80,7 +80,7 @@ class _DashboardPageState extends State<DashboardPage> {
       }
 
       final QuerySnapshot snapshot = await query.get();
-      
+      debugPrint("Users: ${snapshot.docs.length}");
       if (snapshot.docs.isNotEmpty) {
         final List<UserModel> newUsers = snapshot.docs
             .map((doc) => UserModel.fromMap(doc.data() as Map<String, dynamic>))
@@ -102,11 +102,11 @@ class _DashboardPageState extends State<DashboardPage> {
         });
       }
     } catch (e) {
-      if (mounted) {
+      /*if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error loading users: $e')),
         );
-      }
+      }*/
     } finally {
       setState(() {
         _isLoading = false;

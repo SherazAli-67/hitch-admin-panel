@@ -1,10 +1,15 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:hitch_tracker/src/home_desktop_page.dart';
 import 'package:hitch_tracker/src/providers/main_menu_tabchange_provider.dart';
 import 'package:hitch_tracker/src/res/app_constants.dart';
 import 'package:provider/provider.dart';
 
-void main() {
+import 'firebase_options.dart';
+
+Future<void> main() async {
+   WidgetsFlutterBinding.ensureInitialized();
+   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(MultiProvider(providers: [
     ChangeNotifierProvider(create: (_)=> MainMenUTabChangeProvider())
   ], child: const MyApp(),));
