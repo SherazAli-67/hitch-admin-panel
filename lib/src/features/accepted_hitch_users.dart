@@ -15,36 +15,25 @@ class AcceptedHitchRequestsPage extends StatefulWidget {
 
 class _AcceptedHitchRequestsPageState extends State<AcceptedHitchRequestsPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  List<HitchTrackerUserModel> _users = [];
-  List<HitchTrackerUserModel> _searchResults = [];
+  List<AcceptedHitchUserModel> _users = [];
   bool _isLoading = false;
-  bool _isSearching = false;
   bool _hasMoreData = true;
-  bool _hasMoreSearchResults = true;
   DocumentSnapshot? _lastDocument;
-  DocumentSnapshot? _lastSearchDocument;
-  Timer? _debounceTimer;
-  String _searchQuery = '';
-  bool _isInSearchMode = false;
 
-  static const int _pageSize = 20;
+  static const int _pageSize = 8;
 
   @override
   void initState() {
     super.initState();
     _loadUsers();
     _scrollController.addListener(_onScroll);
-    _searchController.addListener(_onSearchChanged);
   }
 
   @override
   void dispose() {
-    _searchController.dispose();
     _scrollController.dispose();
-    _debounceTimer?.cancel();
     super.dispose();
   }
 
@@ -62,8 +51,8 @@ class _AcceptedHitchRequestsPageState extends State<AcceptedHitchRequestsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text("Hitch Requests", style: AppTextStyles.largeTextStyle,),
-                  Text("Manage Hitch requests", style: AppTextStyles.smallTextStyle,)
+                  Text("Accepted Hitch Users", style: AppTextStyles.largeTextStyle,),
+                  Text("Users who have accepted hitch requests", style: AppTextStyles.smallTextStyle,)
                 ],
               )
           ),
@@ -74,11 +63,7 @@ class _AcceptedHitchRequestsPageState extends State<AcceptedHitchRequestsPage> {
   }
 
   Widget _buildUsersSliver() {
-    final currentUsers = _isInSearchMode ? _searchResults : _users;
-    final isCurrentlyLoading = _isInSearchMode ? _isSearching : _isLoading;
-    final hasMore = _isInSearchMode ? _hasMoreSearchResults : _hasMoreData;
-
-    if (currentUsers.isEmpty && !isCurrentlyLoading) {
+    if (_users.isEmpty && !_isLoading) {
       return SliverToBoxAdapter(
         child: Card(
           elevation: 1,
@@ -103,9 +88,9 @@ class _AcceptedHitchRequestsPageState extends State<AcceptedHitchRequestsPage> {
         color: Colors.white,
         child: Column(
           children: [
-            _buildUsersTable(currentUsers),
+            _buildUsersTable(_users),
             // Loading indicator
-            if (isCurrentlyLoading || hasMore)
+            if (_isLoading || _hasMoreData)
               _buildLoadingIndicator(),
           ],
         ),
@@ -113,7 +98,7 @@ class _AcceptedHitchRequestsPageState extends State<AcceptedHitchRequestsPage> {
     );
   }
 
-  Widget _buildUsersTable(List<HitchTrackerUserModel> users) {
+  Widget _buildUsersTable(List<AcceptedHitchUserModel> users) {
     if (users.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(20),
@@ -175,9 +160,9 @@ class _AcceptedHitchRequestsPageState extends State<AcceptedHitchRequestsPage> {
           ),
           DataColumn(
             label: SizedBox(
-              width: 100,
+              width: 120,
               child: Text(
-                'Hitches Count',
+                'Accepted Hitches Count',
                 style: AppTextStyles.regularTextStyle.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
@@ -203,7 +188,7 @@ class _AcceptedHitchRequestsPageState extends State<AcceptedHitchRequestsPage> {
     );
   }
 
-  DataRow _buildDataRow(HitchTrackerUserModel user) {
+  DataRow _buildDataRow(AcceptedHitchUserModel user) {
     return DataRow(
       cells: [
         DataCell(
@@ -250,7 +235,7 @@ class _AcceptedHitchRequestsPageState extends State<AcceptedHitchRequestsPage> {
         DataCell(
           Center(
             child: Text(
-              user.hitchesCount.toString(),
+              user.acceptedHitchCount.toString(),
               style: AppTextStyles.regularTextStyle.copyWith(
                 fontWeight: FontWeight.w600,
                 color: AppColors.primaryColor,
@@ -285,16 +270,14 @@ class _AcceptedHitchRequestsPageState extends State<AcceptedHitchRequestsPage> {
           ),
           const SizedBox(height: 16),
           Text(
-            _searchQuery.isEmpty ? 'No users found' : 'No users match your search',
+            'No accepted hitch users found',
             style: AppTextStyles.regularTextStyle.copyWith(color: Colors.grey[600]),
           ),
-          if (_searchQuery.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              'Try a different search term',
-              style: AppTextStyles.smallTextStyle.copyWith(color: Colors.grey[500]),
-            ),
-          ]
+          const SizedBox(height: 8),
+          Text(
+            'Users who accept hitches will appear here',
+            style: AppTextStyles.smallTextStyle.copyWith(color: Colors.grey[500]),
+          ),
         ],
       ),
     );
@@ -310,50 +293,65 @@ class _AcceptedHitchRequestsPageState extends State<AcceptedHitchRequestsPage> {
 
   void _onScroll() {
     if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent * 0.8) {
-      if (_isInSearchMode) {
-        if (!_isSearching && _hasMoreSearchResults) {
-          _loadMoreSearchResults();
-        }
-      } else {
-        if (!_isLoading && _hasMoreData) {
-          _loadMoreUsers();
-        }
+      if (!_isLoading && _hasMoreData) {
+        _loadMoreUsers();
       }
     }
-  }
-
-  void _onSearchChanged() {
-    if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
-    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
-      final newQuery = _searchController.text.trim();
-      setState(() {
-        _searchQuery = newQuery;
-        _isInSearchMode = newQuery.isNotEmpty;
-      });
-      _performFirebaseSearch();
-    });
   }
 
   Future<void> _loadUsers() async {
     if (_isLoading) return;
 
-    setState(()=> _isLoading = true);
+    setState(() => _isLoading = true);
 
     try {
-      Query query = _firestore
-          .collection('hitches_tracker').doc('hitch_tracker_doc').collection('users').orderBy('hitchesCount', descending: true)
+      // First, fetch accepted hitch counts from the accepted_hitches_userCount collection
+      Query acceptedHitchQuery = _firestore
+          .collection('hitches_tracker')
+          .doc('hitches_tracker_doc')
+          .collection('accepted_hitches_userCount')
+          .orderBy('acceptedHitchCount', descending: true)
           .limit(_pageSize);
 
       if (_lastDocument != null) {
-        query = query.startAfterDocument(_lastDocument!);
+        acceptedHitchQuery = acceptedHitchQuery.startAfterDocument(_lastDocument!);
       }
 
-      final QuerySnapshot snapshot = await query.get();
-      debugPrint("Users: ${snapshot.docs.length}");
-      if (snapshot.docs.isNotEmpty) {
-        final List<HitchTrackerUserModel> newUsers = snapshot.docs
-            .map((doc) => HitchTrackerUserModel.fromMap(doc.data() as Map<String, dynamic>))
-            .toList();
+      final QuerySnapshot acceptedHitchSnapshot = await acceptedHitchQuery.get();
+      debugPrint("Accepted Hitch Users: ${acceptedHitchSnapshot.docs.length}");
+
+      if (acceptedHitchSnapshot.docs.isNotEmpty) {
+        final List<AcceptedHitchUserModel> newUsers = [];
+
+        // For each accepted hitch document, fetch user details
+        for (final acceptedHitchDoc in acceptedHitchSnapshot.docs) {
+          final String userID = acceptedHitchDoc.id; // Document ID is the userID
+          final map = acceptedHitchDoc.data() as Map<String, dynamic>;
+          final int acceptedHitchCount = map['acceptedHitchCount'] ?? 0;
+
+          try {
+            // Fetch user details from users collection
+            final DocumentSnapshot userDoc = await _firestore
+                .collection('users')
+                .doc(userID)
+                .get();
+
+            if (userDoc.exists) {
+              final userData = userDoc.data() as Map<String, dynamic>;
+              final user = AcceptedHitchUserModel(
+                userName: userData['userName'] ?? '',
+                userID: userID,
+                profilePicture: userData['profilePicture'] ?? '',
+                bio: userData['bio'] ?? '',
+                acceptedHitchCount: acceptedHitchCount,
+              );
+              newUsers.add(user);
+            }
+          } catch (e) {
+            debugPrint('Error fetching user details for $userID: $e');
+            // Continue processing other users even if one fails
+          }
+        }
 
         setState(() {
           if (_lastDocument == null) {
@@ -361,101 +359,26 @@ class _AcceptedHitchRequestsPageState extends State<AcceptedHitchRequestsPage> {
           } else {
             _users.addAll(newUsers);
           }
-          _lastDocument = snapshot.docs.last;
-          _hasMoreData = snapshot.docs.length == _pageSize;
+          _lastDocument = acceptedHitchSnapshot.docs.last;
+          _hasMoreData = acceptedHitchSnapshot.docs.length == _pageSize;
         });
       } else {
-        setState(()=>  _hasMoreData = false);
+        setState(() => _hasMoreData = false);
       }
     } catch (e) {
-      // Handle error silently for now
-      debugPrint('Error loading users: $e');
+      debugPrint('Error loading accepted hitch users: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading users: $e')),
+        );
+      }
     } finally {
-      setState(()=> _isLoading = false);
+      setState(() => _isLoading = false);
     }
   }
 
   Future<void> _loadMoreUsers() async {
     await _loadUsers();
-  }
-
-  Future<void> _performFirebaseSearch() async {
-    if (_searchQuery.isEmpty) {
-      setState(() {
-        _isInSearchMode = false;
-        _searchResults.clear();
-        _lastSearchDocument = null;
-        _hasMoreSearchResults = true;
-      });
-      return;
-    }
-
-    if (_searchQuery.length < 2) {
-      // Don't search for queries less than 2 characters
-      return;
-    }
-
-    setState(() {
-      _isSearching = true;
-      _searchResults.clear();
-      _lastSearchDocument = null;
-      _hasMoreSearchResults = true;
-    });
-
-    await _searchInFirebase(_searchQuery);
-  }
-
-  Future<void> _searchInFirebase(String query) async {
-    try {
-      // final String queryLower = query.toLowerCase();
-
-      // Search by userName (primary search)
-      Query searchQuery = _firestore
-          .collection('hitches_tracker').doc('hitch_tracker_doc').collection('users')
-          .orderBy('userName')
-          .where('userName', isGreaterThanOrEqualTo: query)
-          .where('userName', isLessThan: query + '\uf8ff')
-          .limit(_pageSize);
-
-      if (_lastSearchDocument != null) {
-        searchQuery = searchQuery.startAfterDocument(_lastSearchDocument!);
-      }
-
-      final QuerySnapshot snapshot = await searchQuery.get();
-      List<HitchTrackerUserModel> results = [];
-
-      if (snapshot.docs.isNotEmpty) {
-        results = snapshot.docs
-            .map((doc) => HitchTrackerUserModel.fromMap(doc.data() as Map<String, dynamic>))
-            .toList();
-
-        _lastSearchDocument = snapshot.docs.last;
-      }
-
-      setState(() {
-        if (_lastSearchDocument == null || _searchResults.isEmpty) {
-          _searchResults = results;
-        } else {
-          _searchResults.addAll(results);
-        }
-        _hasMoreSearchResults = snapshot.docs.length == _pageSize;
-        _isSearching = false;
-      });
-
-    } catch (e) {
-      setState(() {
-        _isSearching = false;
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Search error: $e')),
-        );
-      }
-    }
-  }
-  Future<void> _loadMoreSearchResults() async {
-    if (_isSearching || !_hasMoreSearchResults) return;
-    await _searchInFirebase(_searchQuery);
   }
 
 }
