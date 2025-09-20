@@ -94,7 +94,7 @@ class HomeDesktopPage extends StatelessWidget{
         return RequestedHitchesPage();
 
       case 2:
-        return AcceptedHitchUsers();
+        return AcceptedHitchRequestsPage();
 
       case 3:
         return ChatsPage();

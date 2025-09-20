@@ -122,7 +122,7 @@ class _DashboardPageState extends State<DashboardPage> {
             borderRadius: BorderRadius.circular(5)
           ),
           color: Colors.white,
-          child: Container(
+          child: SizedBox(
             height: 400, // Fixed height for empty state
             child: _buildEmptyState(),
           ),
@@ -140,7 +140,7 @@ class _DashboardPageState extends State<DashboardPage> {
         child: Column(
           children: [
             // User items
-            ...currentUsers.map((user) => _buildUserItem(user)).toList(),
+            ...currentUsers.map((user) => _buildUserItem(user)),
             // Loading indicator
             if (isCurrentlyLoading || hasMore)
               _buildLoadingIndicator(),
@@ -520,7 +520,7 @@ class _DashboardPageState extends State<DashboardPage> {
     await _searchInFirebase(_searchQuery);
   }
 
-  Future<void> _refreshUsers() async {
+ /* Future<void> _refreshUsers() async {
     if (_isInSearchMode) {
       // Refresh search results
       setState(() {
@@ -538,5 +538,5 @@ class _DashboardPageState extends State<DashboardPage> {
       });
       await _loadUsers();
     }
-  }
+  }*/
 }

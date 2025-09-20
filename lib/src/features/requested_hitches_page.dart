@@ -2,11 +2,9 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:hitch_tracker/src/models/hitch_tracker_model.dart';
-import 'package:hitch_tracker/src/providers/hitch_count_provider.dart';
 import 'package:hitch_tracker/src/res/app_colors.dart';
 import 'package:hitch_tracker/src/res/app_textstyles.dart';
 import 'dart:async';
-import 'package:provider/provider.dart';
 
 
 class RequestedHitchesPage extends StatefulWidget {
@@ -275,101 +273,6 @@ class _RequestedHitchesPageState extends State<RequestedHitchesPage> {
     );
   }
 
-  Widget _buildUserItem(HitchTrackerUserModel user) {
-    List<String> playerTypes = [];
-    // if (user.playerTypePickle) playerTypes.add('Pickleball');
-    // if (user.playerTypeTennis) playerTypes.add('Tennis');
-    // if (user.playerTypePadel) playerTypes.add('Padel');
-    // if (user.playerTypeCoach) playerTypes.add('Coach');
-
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: Colors.blue.withValues(alpha: 0.3),
-      ),
-      title: Text(user.userName,style: AppTextStyles.titleTextStyle,),
-      subtitle: Text(user.bio, style: AppTextStyles.smallTextStyle,),
-    );
-    /*return ElevatedButton(
-      style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.zero
-          ),
-          surfaceTintColor: Colors.white,
-          overlayColor: Colors.grey[300]
-      ),
-      onPressed: () {
-        // Handle user selection if needed
-      },
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(15.0),
-            child: Row(
-              spacing: 20,
-              children: [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundColor: AppColors.textFieldFillColor,
-                  backgroundImage: user.profilePicture.isNotEmpty
-                      ? CachedNetworkImageProvider(user.profilePicture)
-                      : null,
-                  child: user.profilePicture.isEmpty
-                      ? Text(
-                    user.userName.isNotEmpty ? user.userName[0].toUpperCase() : '?',
-                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  )
-                      : null,
-                ),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    spacing: 5,
-                    children: [
-                      Text(
-                          user.userName.isNotEmpty ? user.userName : 'Unknown User',
-                          style: AppTextStyles.regularTextStyle.copyWith(fontWeight: FontWeight.w600)
-                      ),
-                      *//*if (user.latitude != null && user.longitude != null)
-                        FutureBuilder(future: HitchesService.getUserLocationFromLatLng(user.latitude!, user.longitude!), builder: (_, snapshot){
-                          if(snapshot.hasData){
-                            return Text(
-                              snapshot.requireData,
-                              style: AppTextStyles.smallTextStyle,
-                            );
-                          }
-                          return SizedBox();
-                        }),*//*
-                      if (user.bio.isNotEmpty)
-                        Text(
-                          user.bio,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      const SizedBox(height: 10),
-                      if (playerTypes.isNotEmpty)
-                        Wrap(
-                          spacing: 10,
-                          runSpacing: 5,
-                          children: playerTypes
-                              .map((type) => _buildPlayerTypeItem(playerType: type))
-                              .toList(),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            height: 1,
-            color: Colors.black12,
-          )
-        ],
-      ),
-    );*/
-  }
 
   Widget _buildEmptyState() {
     return Center(
@@ -403,67 +306,6 @@ class _RequestedHitchesPageState extends State<RequestedHitchesPage> {
       padding: const EdgeInsets.all(16),
       alignment: Alignment.center,
       child: const CircularProgressIndicator(),
-    );
-  }
-
-  TextField _buildSearchTextField() {
-    return TextField(
-      controller: _searchController,
-      decoration: InputDecoration(
-        enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: Colors.transparent)
-        ),
-        focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: Colors.transparent)
-        ),
-        fillColor: AppColors.textFieldFillColor,
-        filled: true,
-        hintText: "Search users by name or bio (Firebase search)",
-        hintStyle: AppTextStyles.smallTextStyle.copyWith(color: Colors.grey),
-        prefixIcon: const Icon(Icons.search_sharp, color: Colors.grey),
-        suffixIcon: _searchQuery.isNotEmpty
-            ? IconButton(
-          icon: const Icon(Icons.clear, color: Colors.grey),
-          onPressed: () {
-            _searchController.clear();
-          },
-        )
-            : null,
-      ),
-    );
-  }
-
-  Widget _buildPlayerTypeItem({required String playerType}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(99),
-        color: AppColors.textFieldFillColor,
-      ),
-      child: Text(
-        playerType,
-        style: TextStyle(fontSize: 12, color: AppColors.primaryColor),
-      ),
-    );
-  }
-
-  Widget _buildInfoItemWidget({required String title, required int value}) {
-    return Container(
-      decoration: BoxDecoration(
-          color: AppColors.textFieldFillColor,
-          borderRadius: BorderRadius.circular(10)
-      ),
-      padding: const EdgeInsets.all(15),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        spacing: 15,
-        children: [
-          Text(title, style: AppTextStyles.regularTextStyle),
-          Text(value == 1 ? '•••••' :"$value", style: AppTextStyles.headingTextStyle)
-        ],
-      ),
     );
   }
 
@@ -591,11 +433,6 @@ class _RequestedHitchesPageState extends State<RequestedHitchesPage> {
         _lastSearchDocument = snapshot.docs.last;
       }
 
-      // If we don't have enough results from userName search, search bio field
-      /*if (results.length < 10 && _lastSearchDocument == null) {
-        await _searchBioField(queryLower, results);
-      }*/
-
       setState(() {
         if (_lastSearchDocument == null || _searchResults.isEmpty) {
           _searchResults = results;
@@ -617,52 +454,9 @@ class _RequestedHitchesPageState extends State<RequestedHitchesPage> {
       }
     }
   }
-
- /* Future<void> _searchBioField(String queryLower, List<HitchTrackerUserModel> existingResults) async {
-    try {
-      // Search in bio field for additional results
-      final QuerySnapshot bioSnapshot = await _firestore
-          .collection('users')
-          .where('bio', isGreaterThanOrEqualTo: queryLower)
-          .where('bio', isLessThan: queryLower + '\uf8ff')
-          .limit(_pageSize - existingResults.length)
-          .get();
-
-      if (bioSnapshot.docs.isNotEmpty) {
-        final bioResults = bioSnapshot.docs
-            .map((doc) => UserModel.fromMap(doc.data() as Map<String, dynamic>))
-            .where((user) => !existingResults.any((existing) => existing.userID == user.userID))
-            .toList();
-
-        existingResults.addAll(bioResults);
-      }
-    } catch (e) {
-      debugPrint('Bio search error: $e');
-    }
-  }
-*/
   Future<void> _loadMoreSearchResults() async {
     if (_isSearching || !_hasMoreSearchResults) return;
     await _searchInFirebase(_searchQuery);
   }
 
-  Future<void> _refreshUsers() async {
-    if (_isInSearchMode) {
-      // Refresh search results
-      setState(() {
-        _searchResults.clear();
-        _lastSearchDocument = null;
-        _hasMoreSearchResults = true;
-      });
-      await _performFirebaseSearch();
-    } else {
-      // Refresh normal user list
-      setState(() {
-        _users.clear();
-        _lastDocument = null;
-        _hasMoreData = true;
-      });
-      await _loadUsers();
-    }
-  }
 }
