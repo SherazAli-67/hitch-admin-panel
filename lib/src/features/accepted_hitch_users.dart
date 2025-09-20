@@ -1,10 +1,9 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:hitch_tracker/src/models/hitch_tracker_model.dart';
+import 'package:hitch_tracker/src/models/accepted_hitch_user_model.dart';
 import 'package:hitch_tracker/src/res/app_colors.dart';
 import 'package:hitch_tracker/src/res/app_textstyles.dart';
-import 'dart:async';
 
 
 class AcceptedHitchRequestsPage extends StatefulWidget {
