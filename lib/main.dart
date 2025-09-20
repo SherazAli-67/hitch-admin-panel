@@ -25,11 +25,12 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: appTitle,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.white),
         fontFamily: appFontFamilyMontserrat,
-        scaffoldBackgroundColor: Colors.white
+        // scaffoldBackgroundColor: Colors.white
       ),
       home: Scaffold(
         body: HomeDesktopPage()

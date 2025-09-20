@@ -2,13 +2,12 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:hitch_tracker/src/models/user_model.dart';
-import 'package:hitch_tracker/src/providers/hitch_count_provider.dart';
 import 'package:hitch_tracker/src/res/app_colors.dart';
 import 'package:hitch_tracker/src/res/app_textstyles.dart';
+import 'package:hitch_tracker/src/res/string_constants.dart';
 import 'package:hitch_tracker/src/service/hitches_service.dart';
 import 'dart:async';
 
-import 'package:provider/provider.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -18,6 +17,17 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
+
+  String? _selectedPlayerType;
+
+  // List of items in our dropdown menu
+  final _playerTypes = [
+    playerTypePickleBallValue,
+    playerTypeTennisValue,
+    playerTypePadelValue,
+    playerTypeCoachValue,
+  ];
+
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
@@ -60,7 +70,7 @@ class _DashboardPageState extends State<DashboardPage> {
       controller: _scrollController,
       slivers: [
         // Stats section
-        SliverPadding(
+        /*SliverPadding(
           padding: const EdgeInsets.only(bottom: 20),
           sliver: SliverToBoxAdapter(
             child: Consumer<HitchCountProvider>(
@@ -88,19 +98,92 @@ class _DashboardPageState extends State<DashboardPage> {
               }
             ),
           ),
-        ),
+        ),*/
         // Users section header
         SliverPadding(
-          padding: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.only(top: 10, bottom: 10, right: 100),
           sliver: SliverToBoxAdapter(
-            child: Text("Users", style: AppTextStyles.headingTextStyle),
-          ),
-        ),
-        // Search field
-        SliverPadding(
-          padding: const EdgeInsets.only(bottom: 10),
-          sliver: SliverToBoxAdapter(
-            child: _buildSearchTextField(),
+            child: Column(
+              spacing: 20,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("All Users", style: AppTextStyles.headingTextStyle,),
+                    Text('A comprehensive list of all users on the Hitch Platform', style: AppTextStyles.smallTextStyle,)
+                  ],
+                ),
+                Card(
+                  color: Colors.white,
+                  elevation: 0,
+                  margin: EdgeInsets.only(right: 10),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.zero
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(15.0),
+                    child: Row(
+                      spacing: 20,
+                      children: [
+                        Expanded(child: SizedBox(
+                          height: 40,
+                          child: TextField(
+                            controller: _searchController,
+                            style: AppTextStyles.smallTextStyle,
+                            decoration: InputDecoration(
+                              enabledBorder: OutlineInputBorder(
+                                borderSide: BorderSide(color: AppColors.textFieldFillColor)
+                              ),
+                                focusedBorder: OutlineInputBorder(
+                                    borderSide: BorderSide(color: AppColors.textFieldFillColor)
+                                ),
+                              hintText: 'Search by name, location, bio',
+                              hintStyle: AppTextStyles.smallTextStyle.copyWith(color: Colors.grey,),
+                            ),
+                          ),
+                        )),
+
+                        Expanded(child: FormField<String>(
+                          builder: (FormFieldState<String> state) {
+                            return InputDecorator(
+                              decoration: InputDecoration(
+                                enabledBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(color: AppColors.textFieldFillColor)),
+                                labelStyle: AppTextStyles.smallTextStyle,
+                                hintStyle: AppTextStyles.smallTextStyle.copyWith(color: Colors.grey),
+                                contentPadding: EdgeInsets.symmetric(horizontal: 10),
+                                errorStyle: AppTextStyles.regularTextStyle.copyWith(color: Colors.red),
+                                // hintText: 'Please select expense',
+                              ),
+                              isEmpty: _selectedPlayerType == null,
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  value: _selectedPlayerType,
+                                  hint: Text('Filter by sport', style: AppTextStyles.smallTextStyle,),
+                                  isDense: true,
+                                  elevation: 0,
+                                  dropdownColor: Colors.white,
+                                  onChanged: (String? newValue) {
+                                    setState(()=> _selectedPlayerType = newValue);
+                                  },
+                                  items: _playerTypes.map((String value) {
+                                    return DropdownMenuItem<String>(
+                                      value: value,
+                                      child: Text(value)
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                            );
+                          },
+                        ),)
+                      ],
+                    ),
+                  ),
+                )
+              ],
+            )
           ),
         ),
         // Users list
@@ -136,6 +219,7 @@ class _DashboardPageState extends State<DashboardPage> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(5)
         ),
+        margin: EdgeInsets.only(right: 100),
         color: Colors.white,
         child: Column(
           children: [
@@ -152,12 +236,78 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget _buildUserItem(UserModel user) {
     List<String> playerTypes = [];
-    if (user.playerTypePickle) playerTypes.add('Pickleball');
-    if (user.playerTypeTennis) playerTypes.add('Tennis');
-    if (user.playerTypePadel) playerTypes.add('Padel');
-    if (user.playerTypeCoach) playerTypes.add('Coach');
+    if (user.playerTypePickle) playerTypes.add(playerTypePickleBallValue);
+    if (user.playerTypeTennis) playerTypes.add(playerTypeTennisValue);
+    if (user.playerTypePadel) playerTypes.add(playerTypePadelValue);
+    if (user.playerTypeCoach) playerTypes.add(playerTypeCoachValue);
 
-    return ElevatedButton(
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(15.0),
+          child: Row(
+            spacing: 20,
+            children: [
+              CircleAvatar(
+                radius: 30,
+                backgroundColor: AppColors.textFieldFillColor,
+                backgroundImage: user.profilePicture.isNotEmpty
+                    ? CachedNetworkImageProvider(user.profilePicture)
+                    : null,
+                child: user.profilePicture.isEmpty
+                    ? Text(
+                  user.userName.isNotEmpty ? user.userName[0].toUpperCase() : '?',
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                )
+                    : null,
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  spacing: 5,
+                  children: [
+                    Text(
+                        user.userName.isNotEmpty ? user.userName : 'Unknown User',
+                        style: AppTextStyles.regularTextStyle.copyWith(fontWeight: FontWeight.w600)
+                    ),
+                    if (user.latitude != null && user.longitude != null)
+                      FutureBuilder(future: HitchesService.getUserLocationFromLatLng(user.latitude!, user.longitude!), builder: (_, snapshot){
+                        if(snapshot.hasData){
+                          return Text(
+                            snapshot.requireData,
+                            style: AppTextStyles.smallTextStyle,
+                          );
+                        }
+                        return SizedBox();
+                      }),
+                    if (user.bio.isNotEmpty)
+                      Text(
+                        user.bio,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    const SizedBox(height: 10),
+                    if (playerTypes.isNotEmpty)
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 5,
+                        children: playerTypes
+                            .map((type) => _buildPlayerTypeItem(playerType: type))
+                            .toList(),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          height: 1,
+          color: AppColors.textFieldFillColor,
+        )
+      ],
+    );
+  /*  return ElevatedButton(
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -236,7 +386,7 @@ class _DashboardPageState extends State<DashboardPage> {
           )
         ],
       ),
-    );
+    );*/
   }
 
   Widget _buildEmptyState() {
@@ -308,11 +458,11 @@ class _DashboardPageState extends State<DashboardPage> {
       padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(99),
-        color: AppColors.textFieldFillColor,
+        color: Colors.deepPurple.withValues(alpha: 0.1),
       ),
       child: Text(
         playerType,
-        style: TextStyle(fontSize: 12, color: AppColors.primaryColor),
+        style: TextStyle(fontSize: 12, color: Colors.black),
       ),
     );
   }
