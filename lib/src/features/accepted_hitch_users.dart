@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -5,6 +7,7 @@ import 'package:hitch_tracker/src/models/accepted_hitch_user_model.dart';
 import 'package:hitch_tracker/src/res/app_colors.dart';
 import 'package:hitch_tracker/src/res/app_textstyles.dart';
 import 'package:hitch_tracker/src/widgets/table_column_title_widget.dart';
+
 
 
 class AcceptedHitchRequestsPage extends StatefulWidget {
@@ -17,28 +20,35 @@ class AcceptedHitchRequestsPage extends StatefulWidget {
 class _AcceptedHitchRequestsPageState extends State<AcceptedHitchRequestsPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final ScrollController _scrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
 
   List<AcceptedHitchUserModel> _users = [];
+  List<AcceptedHitchUserModel> _filteredUsers = [];
   bool _isLoading = false;
   bool _hasMoreData = true;
   DocumentSnapshot? _lastDocument;
-
+  Timer? _debounceTimer;
+  String _searchQuery = '';
+  bool _isInSearchMode = false;
   static const int _pageSize = 8;
+
+
 
   @override
   void initState() {
     super.initState();
     _loadUsers();
     _scrollController.addListener(_onScroll);
+    _searchController.addListener(_onSearchChanged);
   }
 
   @override
   void dispose() {
+    _searchController.dispose();
     _scrollController.dispose();
+    _debounceTimer?.cancel();
     super.dispose();
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -58,13 +68,49 @@ class _AcceptedHitchRequestsPageState extends State<AcceptedHitchRequestsPage> {
               )
           ),
         ),
+        // Search field
+        SliverPadding(
+          padding: const EdgeInsets.only(top: 10, bottom: 10, right: 100),
+          sliver: SliverToBoxAdapter(
+              child: Card(
+                color: Colors.white,
+                elevation: 0,
+                margin: EdgeInsets.only(right: 10),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.zero
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(15.0),
+                  child: SizedBox(
+                    height: 40,
+                    child: TextField(
+                      controller: _searchController,
+                      style: AppTextStyles.smallTextStyle,
+                      decoration: InputDecoration(
+                        enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: AppColors.textFieldFillColor)
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: AppColors.textFieldFillColor)
+                        ),
+                        hintText: 'Search by name, bio, or user ID',
+                        hintStyle: AppTextStyles.smallTextStyle.copyWith(color: Colors.grey,),
+                      ),
+                    ),
+                  ),
+                ),
+              )
+          ),
+        ),
         _buildUsersSliver(),
       ],
     );
   }
 
   Widget _buildUsersSliver() {
-    if (_users.isEmpty && !_isLoading) {
+    final currentUsers = _isInSearchMode ? _filteredUsers : _users;
+
+    if (currentUsers.isEmpty && !_isLoading) {
       return SliverToBoxAdapter(
         child: Card(
           elevation: 1,
@@ -89,7 +135,7 @@ class _AcceptedHitchRequestsPageState extends State<AcceptedHitchRequestsPage> {
         color: Colors.white,
         child: Column(
           children: [
-            _buildUsersTable(_users),
+            _buildUsersTable(currentUsers),
             // Loading indicator
             if (_isLoading || _hasMoreData)
               _buildLoadingIndicator(),
@@ -100,7 +146,7 @@ class _AcceptedHitchRequestsPageState extends State<AcceptedHitchRequestsPage> {
   }
 
   Widget _buildUsersTable(List<AcceptedHitchUserModel> users) {
-    if (users.isEmpty) {
+    if (users.isEmpty && !_isLoading) {
       return Container(
         padding: const EdgeInsets.all(20),
         child: Text(
@@ -239,7 +285,6 @@ class _AcceptedHitchRequestsPageState extends State<AcceptedHitchRequestsPage> {
     );
   }
 
-
   Widget _buildEmptyState() {
     return Center(
       child: Column(
@@ -252,12 +297,14 @@ class _AcceptedHitchRequestsPageState extends State<AcceptedHitchRequestsPage> {
           ),
           const SizedBox(height: 16),
           Text(
-            'No accepted hitch users found',
+            _searchQuery.isEmpty ? 'No accepted hitch users found' : 'No users match your search',
             style: AppTextStyles.regularTextStyle.copyWith(color: Colors.grey[600]),
           ),
           const SizedBox(height: 8),
           Text(
-            'Users who accept hitches will appear here',
+            _searchQuery.isEmpty 
+                ? 'Users who accept hitches will appear here'
+                : 'Try a different search term',
             style: AppTextStyles.smallTextStyle.copyWith(color: Colors.grey[500]),
           ),
         ],
@@ -273,12 +320,46 @@ class _AcceptedHitchRequestsPageState extends State<AcceptedHitchRequestsPage> {
     );
   }
 
+
   void _onScroll() {
     if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent * 0.8) {
-      if (!_isLoading && _hasMoreData) {
+      if (!_isInSearchMode && !_isLoading && _hasMoreData) {
         _loadMoreUsers();
       }
     }
+  }
+
+  void _onSearchChanged() {
+    if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 300), () {
+      final newQuery = _searchController.text.trim();
+      setState(() {
+        _searchQuery = newQuery;
+        _isInSearchMode = newQuery.isNotEmpty;
+      });
+      _filterUsers();
+    });
+  }
+
+  void _filterUsers() {
+    if (_searchQuery.isEmpty) {
+      setState(() {
+        _filteredUsers.clear();
+        _isInSearchMode = false;
+      });
+      return;
+    }
+
+    final query = _searchQuery.toLowerCase();
+    final filtered = _users.where((user) {
+      return user.userName.toLowerCase().contains(query) ||
+             user.bio.toLowerCase().contains(query) ||
+             user.userID.toLowerCase().contains(query);
+    }).toList();
+
+    setState(() {
+      _filteredUsers = filtered;
+    });
   }
 
   Future<void> _loadUsers() async {
@@ -344,6 +425,11 @@ class _AcceptedHitchRequestsPageState extends State<AcceptedHitchRequestsPage> {
           _lastDocument = acceptedHitchSnapshot.docs.last;
           _hasMoreData = acceptedHitchSnapshot.docs.length == _pageSize;
         });
+
+        // Reapply search filter if in search mode
+        if (_isInSearchMode) {
+          _filterUsers();
+        }
       } else {
         setState(() => _hasMoreData = false);
       }

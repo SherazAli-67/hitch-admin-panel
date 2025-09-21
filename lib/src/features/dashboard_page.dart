@@ -440,6 +440,21 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
+  List<UserModel> _filterUsersByPlayerType(List<UserModel> users, String playerType) {
+    switch (playerType) {
+      case playerTypePickleBallValue:
+        return users.where((user) => user.playerTypePickle).toList();
+      case playerTypeTennisValue:
+        return users.where((user) => user.playerTypeTennis).toList();
+      case playerTypePadelValue:
+        return users.where((user) => user.playerTypePadel).toList();
+      case playerTypeCoachValue:
+        return users.where((user) => user.playerTypeCoach).toList();
+      default:
+        return users;
+    }
+  }
+
   void _onScroll() {
     if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent * 0.8) {
       if (_isInSearchMode) {
@@ -569,9 +584,16 @@ class _DashboardPageState extends State<DashboardPage> {
       List<UserModel> results = [];
 
       if (snapshot.docs.isNotEmpty) {
-        results = snapshot.docs
+        List<UserModel> allResults = snapshot.docs
             .map((doc) => UserModel.fromMap(doc.data() as Map<String, dynamic>))
             .toList();
+
+        // Apply player type filter to search results if selected
+        if (_selectedPlayerType != null) {
+          results = _filterUsersByPlayerType(allResults, _selectedPlayerType!);
+        } else {
+          results = allResults;
+        }
 
         _lastSearchDocument = snapshot.docs.last;
       }
@@ -614,10 +636,15 @@ class _DashboardPageState extends State<DashboardPage> {
           .get();
 
       if (bioSnapshot.docs.isNotEmpty) {
-        final bioResults = bioSnapshot.docs
+        List<UserModel> bioResults = bioSnapshot.docs
             .map((doc) => UserModel.fromMap(doc.data() as Map<String, dynamic>))
             .where((user) => !existingResults.any((existing) => existing.userID == user.userID))
             .toList();
+
+        // Apply player type filter to bio search results if selected
+        if (_selectedPlayerType != null) {
+          bioResults = _filterUsersByPlayerType(bioResults, _selectedPlayerType!);
+        }
 
         existingResults.addAll(bioResults);
       }

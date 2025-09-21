@@ -71,6 +71,39 @@ class _RequestedHitchesPageState extends State<RequestedHitchesPage> {
             )
           ),
         ),
+        SliverPadding(
+          padding: const EdgeInsets.only(top: 10, bottom: 10, right: 100),
+          sliver: SliverToBoxAdapter(
+              child: Card(
+                color: Colors.white,
+                elevation: 0,
+                margin: EdgeInsets.only(right: 10),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.zero
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(15.0),
+                  child: SizedBox(
+                    height: 40,
+                    child: TextField(
+                      controller: _searchController,
+                      style: AppTextStyles.smallTextStyle,
+                      decoration: InputDecoration(
+                        enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: AppColors.textFieldFillColor)
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: AppColors.textFieldFillColor)
+                        ),
+                        hintText: 'Search by name',
+                        hintStyle: AppTextStyles.smallTextStyle.copyWith(color: Colors.grey,),
+                      ),
+                    ),
+                  ),
+                ),
+              )
+          ),
+        ),
         _buildUsersSliver(),
       ],
     );
@@ -117,7 +150,7 @@ class _RequestedHitchesPageState extends State<RequestedHitchesPage> {
   }
 
   Widget _buildUsersTable(List<HitchTrackerUserModel> users) {
-    if (users.isEmpty) {
+    if (users.isEmpty && !_isLoading) {
       return Container(
         padding: const EdgeInsets.all(20),
         child: Text(
@@ -429,9 +462,7 @@ class _RequestedHitchesPageState extends State<RequestedHitchesPage> {
       });
 
     } catch (e) {
-      setState(() {
-        _isSearching = false;
-      });
+      setState(()=> _isSearching = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Search error: $e')),
@@ -439,6 +470,7 @@ class _RequestedHitchesPageState extends State<RequestedHitchesPage> {
       }
     }
   }
+
   Future<void> _loadMoreSearchResults() async {
     if (_isSearching || !_hasMoreSearchResults) return;
     await _searchInFirebase(_searchQuery);

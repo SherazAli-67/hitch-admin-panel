@@ -120,41 +120,6 @@ class HomeDesktopPage extends StatelessWidget{
                 }
             ),
           ),
-          /* Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text("Hitch Admin", style: AppTextStyles.largeTextStyle,),
-                Text("Admin Dashboard", style: AppTextStyles.regularTextStyle.copyWith(color: Colors.grey),)
-              ],
-            ),
-            Expanded(
-              child: Consumer<MainMenUTabChangeProvider>(
-                builder: (_, provider, _) {
-                  int selectedIndex = provider.currentIndex;
-                  return Row(
-                    spacing: 20,
-                    children: [
-                      SizedBox(
-                        width: 250,
-                        child: Column(
-                          spacing: 20,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildMenuItemWidget(icon: Icons.home_outlined, title: "Dashboard", onTap: (){}, tabIndex: 0, selectedIndex: selectedIndex, provider: provider),
-                            _buildMenuItemWidget(icon: Icons.person, title: "Requested Hitches", onTap: (){},  tabIndex: 1, selectedIndex: selectedIndex,  provider: provider),
-                            _buildMenuItemWidget(icon: Icons.request_page, title: "Accepted Hitches", onTap: (){},  tabIndex: 2, selectedIndex: selectedIndex,  provider: provider),
-                            _buildMenuItemWidget(icon: Icons.chat_bubble_outline_rounded, title: "Chats", onTap: (){},  tabIndex: 3, selectedIndex: selectedIndex,  provider: provider),
-
-                          ],
-                        )
-                      ),
-                      Expanded(child: _buildMenuPageWidget(selectedIndex))
-                    ],
-                  );
-                }
-              ),
-            )*//*
-            ,*/
         ],
       ),),
     );
