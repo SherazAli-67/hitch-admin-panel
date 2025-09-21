@@ -2,11 +2,14 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:hitch_tracker/src/models/user_model.dart';
+import 'package:hitch_tracker/src/providers/hitch_count_provider.dart';
 import 'package:hitch_tracker/src/res/app_colors.dart';
 import 'package:hitch_tracker/src/res/app_textstyles.dart';
 import 'package:hitch_tracker/src/res/string_constants.dart';
 import 'package:hitch_tracker/src/service/hitches_service.dart';
 import 'dart:async';
+
+import 'package:provider/provider.dart';
 
 
 class DashboardPage extends StatefulWidget {
@@ -83,12 +86,23 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    GestureDetector(
-                        onTap:()async{
-                          // await FirebaseFirestore.instance.collection('location_trigger').add({'lowerCaseTest' :  'test'});
-                          // debugPrint("Record added");
-                        },
-                        child: Text("All Users", style: AppTextStyles.headingTextStyle,)),
+                    Row(
+                      spacing: 20,
+                      // mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        GestureDetector(
+                            onTap:()async{
+                              // await FirebaseFirestore.instance.collection('location_trigger').add({'lowerCaseTest' :  'test'});
+                              // debugPrint("Record added");
+                            },
+                            child: Text("All Users", style: AppTextStyles.largeTextStyle,)),
+                        Consumer<HitchCountProvider>(builder: (_, provider, _){
+                          return Text(provider.totalUsers == 1 ? "" : '${provider.totalUsers}', style: AppTextStyles.headingTextStyle.copyWith(color: AppColors.primaryColor),);
+                        }),
+
+                      ],
+                    ),
+
                     Text('A comprehensive list of all users on the Hitch Platform', style: AppTextStyles.smallTextStyle,)
                   ],
                 ),

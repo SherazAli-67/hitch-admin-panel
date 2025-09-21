@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:hitch_tracker/src/models/hitch_tracker_model.dart';
 import 'package:hitch_tracker/src/res/app_colors.dart';
 import 'package:hitch_tracker/src/res/app_textstyles.dart';
+import 'package:provider/provider.dart';
 import 'dart:async';
 
+import '../providers/hitch_count_provider.dart';
 import '../widgets/table_column_title_widget.dart';
 
 
@@ -65,12 +67,21 @@ class _RequestedHitchesPageState extends State<RequestedHitchesPage> with Automa
       slivers: [
         // Stats section
         SliverPadding(
-          padding: const EdgeInsets.only(bottom: 20),
+          padding: const EdgeInsets.only(bottom: 20, top: 20,),
           sliver: SliverToBoxAdapter(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Hitch Requests", style: AppTextStyles.largeTextStyle,),
+                Row(
+                  spacing: 20,
+                  children: [
+                    Text("Hitch Requests", style: AppTextStyles.largeTextStyle,),
+                    Consumer<HitchCountProvider>(builder: (_, provider, _){
+                      return Text(provider.totalUsers == 1 ? "" : '${provider.totalHitchRequests}', style: AppTextStyles.headingTextStyle.copyWith(color: AppColors.primaryColor),);
+                    }),
+                  ],
+                ),
+
                 Text("Manage Hitch requests", style: AppTextStyles.smallTextStyle,)
               ],
             )

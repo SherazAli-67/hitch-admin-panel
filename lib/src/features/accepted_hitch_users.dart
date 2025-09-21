@@ -6,6 +6,9 @@ import 'package:hitch_tracker/src/models/accepted_hitch_user_model.dart';
 import 'package:hitch_tracker/src/res/app_colors.dart';
 import 'package:hitch_tracker/src/res/app_textstyles.dart';
 import 'package:hitch_tracker/src/widgets/table_column_title_widget.dart';
+import 'package:provider/provider.dart';
+
+import '../providers/hitch_count_provider.dart';
 
 
 
@@ -61,12 +64,21 @@ class _AcceptedHitchRequestsPageState extends State<AcceptedHitchRequestsPage> w
       slivers: [
         // Stats section
         SliverPadding(
-          padding: const EdgeInsets.only(bottom: 20),
+          padding: const EdgeInsets.only(bottom: 20, top: 20,),
           sliver: SliverToBoxAdapter(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text("Accepted Hitch Users", style: AppTextStyles.largeTextStyle,),
+                  Row(
+                    spacing: 20,
+                    children: [
+                      Text("Accepted Hitch Users", style: AppTextStyles.largeTextStyle,),
+                      Consumer<HitchCountProvider>(builder: (_, provider, _){
+                        return Text(provider.totalUsers == 1 ? "" : '${provider.totalHitchAccepted}', style: AppTextStyles.headingTextStyle.copyWith(color: AppColors.primaryColor),);
+                      }),
+                    ],
+                  ),
+
                   Text("Users who have accepted hitch requests", style: AppTextStyles.smallTextStyle,)
                 ],
               )

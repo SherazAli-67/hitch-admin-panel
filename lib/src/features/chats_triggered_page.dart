@@ -4,7 +4,9 @@ import 'package:hitch_tracker/src/helpers/date_time_helper.dart';
 import 'package:hitch_tracker/src/models/chat_trigger_model.dart';
 import 'package:hitch_tracker/src/res/app_colors.dart';
 import 'package:hitch_tracker/src/res/app_textstyles.dart';
+import 'package:provider/provider.dart';
 import 'dart:async';
+import '../providers/hitch_count_provider.dart';
 import '../res/string_constants.dart';
 import '../widgets/table_column_title_widget.dart';
 
@@ -71,7 +73,7 @@ class _ChatsTriggeredPageState extends State<ChatsTriggeredPage> with AutomaticK
       controller: _scrollController,
       slivers: [
         SliverPadding(
-          padding: const EdgeInsets.only(top: 10, bottom: 10, right: 100),
+          padding: const EdgeInsets.only(top: 20, bottom: 10, right: 100),
           sliver: SliverToBoxAdapter(
               child: Column(
                 spacing: 20,
@@ -80,8 +82,16 @@ class _ChatsTriggeredPageState extends State<ChatsTriggeredPage> with AutomaticK
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("All Users", style: AppTextStyles.headingTextStyle,),
-                      Text('A comprehensive list of all users on the Hitch Platform', style: AppTextStyles.smallTextStyle,)
+                      Row(
+                        spacing: 20,
+                        children: [
+                          Text("Chat Triggers", style: AppTextStyles.largeTextStyle,),
+                          Consumer<HitchCountProvider>(builder: (_, provider, _){
+                            return Text(provider.totalUsers == 1 ? "" : '${provider.totalChats}', style: AppTextStyles.headingTextStyle.copyWith(color: AppColors.primaryColor),);
+                          }),
+                        ],
+                      ),
+                      Text('A comprehensive list of all users on triggered the chat feature', style: AppTextStyles.smallTextStyle,)
                     ],
                   ),
                   Card(
@@ -114,7 +124,7 @@ class _ChatsTriggeredPageState extends State<ChatsTriggeredPage> with AutomaticK
                             ),
                           )),
 
-                          Expanded(child: FormField<String>(
+                          /*Expanded(child: FormField<String>(
                             builder: (FormFieldState<String> state) {
                               return InputDecorator(
                                 decoration: InputDecoration(
@@ -147,7 +157,7 @@ class _ChatsTriggeredPageState extends State<ChatsTriggeredPage> with AutomaticK
                                 ),
                               );
                             },
-                          ),)
+                          ),)*/
                         ],
                       ),
                     ),
@@ -278,13 +288,13 @@ class _ChatsTriggeredPageState extends State<ChatsTriggeredPage> with AutomaticK
       cells: [
         DataCell(
           Center(
-            child: Text(
-              user.trackID,
-              style: AppTextStyles.regularTextStyle.copyWith(
-                fontWeight: FontWeight.w600,
-                color: AppColors.primaryColor,
-              ),
-            )
+              child: Text(
+                user.trackID,
+                style: AppTextStyles.regularTextStyle.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primaryColor,
+                ),
+              )
           ),
         ),
         DataCell(
