@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:hitch_tracker/src/models/accepted_hitch_user_model.dart';
 import 'package:hitch_tracker/src/res/app_colors.dart';
 import 'package:hitch_tracker/src/res/app_textstyles.dart';
+import 'package:hitch_tracker/src/widgets/table_column_title_widget.dart';
 
 
 class AcceptedHitchRequestsPage extends StatefulWidget {
@@ -115,71 +116,52 @@ class _AcceptedHitchRequestsPageState extends State<AcceptedHitchRequestsPage> {
       child: DataTable(
         columnSpacing: 16,
         horizontalMargin: 0,
-        headingRowColor: WidgetStateProperty.all(AppColors.textFieldFillColor),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10.0), // Rounded corners
+          border: Border.all(
+            color: AppColors.primaryColor.withValues(alpha: 0.5),
+            width: 1,
+          ),
+        ),
+        headingRowColor: WidgetStateProperty.all(AppColors.primaryColor.withValues(alpha: 0.1)),
         headingRowHeight: 56,
         dataRowMinHeight: 72,
         dataRowMaxHeight: 72,
         border: TableBorder.all(
-          color: Colors.grey[300]!,
+          color: AppColors.primaryColor.withValues(alpha: 0.1),
           width: 1,
         ),
         columns: [
           DataColumn(
             label: SizedBox(
               width: 80,
-              child: Text(
-                'Profile',
-                style: AppTextStyles.regularTextStyle.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-                textAlign: TextAlign.center,
-              ),
+              child: Center(child: TableColumnWidget(title: 'Profile'))
             ),
           ),
           DataColumn(
             label: Expanded(
               flex: 2,
-              child: Text(
-                'User Name',
-                style: AppTextStyles.regularTextStyle.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              child: TableColumnWidget(title: 'User Name')
             ),
           ),
           DataColumn(
             label: Expanded(
               flex: 3,
-              child: Text(
-                'Bio',
-                style: AppTextStyles.regularTextStyle.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              child: TableColumnWidget(title: 'Bio')
             ),
           ),
           DataColumn(
             label: SizedBox(
               width: 120,
-              child: Text(
-                'Accepted Hitches Count',
-                style: AppTextStyles.regularTextStyle.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-                textAlign: TextAlign.center,
-              ),
+              child: TableColumnWidget(title: 'Accepted Hitches')
             ),
             numeric: true,
           ),
           DataColumn(
             label: Expanded(
               flex: 2,
-              child: Text(
-                'User ID',
-                style: AppTextStyles.regularTextStyle.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              child: TableColumnWidget(title: 'User ID')
             ),
           ),
         ],
@@ -287,7 +269,7 @@ class _AcceptedHitchRequestsPageState extends State<AcceptedHitchRequestsPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       alignment: Alignment.center,
-      child: const CircularProgressIndicator(),
+      child: const CircularProgressIndicator(color: AppColors.primaryColor,),
     );
   }
 

@@ -69,37 +69,6 @@ class _DashboardPageState extends State<DashboardPage> {
     return CustomScrollView(
       controller: _scrollController,
       slivers: [
-        // Stats section
-        /*SliverPadding(
-          padding: const EdgeInsets.only(bottom: 20),
-          sliver: SliverToBoxAdapter(
-            child: Consumer<HitchCountProvider>(
-              builder: (_, provider,_) {
-                return Row(
-                  spacing: 20,
-                  children: [
-                    Expanded(
-                      child: _buildInfoItemWidget(
-                        title: 'Users',
-                        value: provider.totalUsers
-                      ),
-                    ),
-                    Expanded(
-                      child: _buildInfoItemWidget(title: 'Requested Hitches', value: provider.totalHitchRequests),
-                    ),
-                    Expanded(
-                      child: _buildInfoItemWidget(title: 'Accepted Hitches', value: provider.totalHitchAccepted),
-                    ),
-                    Expanded(
-                      child: _buildInfoItemWidget(title: 'Chats', value: provider.totalChats),
-                    ),
-                  ],
-                );
-              }
-            ),
-          ),
-        ),*/
-        // Users section header
         SliverPadding(
           padding: const EdgeInsets.only(top: 10, bottom: 10, right: 100),
           sliver: SliverToBoxAdapter(
@@ -424,34 +393,7 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  TextField _buildSearchTextField() {
-    return TextField(
-      controller: _searchController,
-      decoration: InputDecoration(
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Colors.transparent)
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Colors.transparent)
-        ),
-        fillColor: AppColors.textFieldFillColor,
-        filled: true,
-        hintText: "Search users by name or bio (Firebase search)",
-        hintStyle: AppTextStyles.smallTextStyle.copyWith(color: Colors.grey),
-        prefixIcon: const Icon(Icons.search_sharp, color: Colors.grey),
-        suffixIcon: _searchQuery.isNotEmpty
-            ? IconButton(
-                icon: const Icon(Icons.clear, color: Colors.grey),
-                onPressed: () {
-                  _searchController.clear();
-                },
-              )
-            : null,
-      ),
-    );
-  }
+
 
   Widget _buildPlayerTypeItem({required String playerType}) {
     return Container(
@@ -463,24 +405,6 @@ class _DashboardPageState extends State<DashboardPage> {
       child: Text(
         playerType,
         style: TextStyle(fontSize: 12, color: Colors.black),
-      ),
-    );
-  }
-
-  Widget _buildInfoItemWidget({required String title, required int value}) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.textFieldFillColor,
-        borderRadius: BorderRadius.circular(10)
-      ),
-      padding: const EdgeInsets.all(15),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        spacing: 15,
-        children: [
-          Text(title, style: AppTextStyles.regularTextStyle),
-          Text(value == 1 ? '•••••' :"$value", style: AppTextStyles.headingTextStyle)
-        ],
       ),
     );
   }

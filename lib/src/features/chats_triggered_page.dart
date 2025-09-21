@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:hitch_tracker/src/helpers/date_time_helper.dart';
 import 'package:hitch_tracker/src/models/chat_trigger_model.dart';
 import 'package:hitch_tracker/src/providers/hitch_count_provider.dart';
 import 'package:hitch_tracker/src/res/app_colors.dart';
@@ -9,6 +10,7 @@ import 'dart:async';
 import 'package:provider/provider.dart';
 
 import '../res/string_constants.dart';
+import '../widgets/table_column_title_widget.dart';
 
 class ChatsTriggeredPage extends StatefulWidget {
   const ChatsTriggeredPage({super.key});
@@ -18,6 +20,15 @@ class ChatsTriggeredPage extends StatefulWidget {
 }
 
 class _ChatsTriggeredPageState extends State<ChatsTriggeredPage> {
+
+  String? _selectedTriggerType;
+
+  // List of items in our dropdown menu
+  final _triggerTypes = [
+    triggerTypeEmail,
+    triggerTypeMessage,
+  ];
+
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
@@ -59,48 +70,90 @@ class _ChatsTriggeredPageState extends State<ChatsTriggeredPage> {
     return CustomScrollView(
       controller: _scrollController,
       slivers: [
-        // Stats section
         SliverPadding(
-          padding: const EdgeInsets.only(bottom: 20),
+          padding: const EdgeInsets.only(top: 10, bottom: 10, right: 100),
           sliver: SliverToBoxAdapter(
-            child: Consumer<HitchCountProvider>(
-                builder: (_, provider,_) {
-                  return Row(
-                    spacing: 20,
+              child: Column(
+                spacing: 20,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: _buildInfoItemWidget(
-                            title: 'Users',
-                            value: provider.totalUsers
-                        ),
-                      ),
-                      Expanded(
-                        child: _buildInfoItemWidget(title: 'Requested Hitches', value: provider.totalHitchRequests),
-                      ),
-                      Expanded(
-                        child: _buildInfoItemWidget(title: 'Accepted Hitches', value: provider.totalHitchAccepted),
-                      ),
-                      Expanded(
-                        child: _buildInfoItemWidget(title: 'Chats', value: provider.totalChats),
-                      ),
+                      Text("All Users", style: AppTextStyles.headingTextStyle,),
+                      Text('A comprehensive list of all users on the Hitch Platform', style: AppTextStyles.smallTextStyle,)
                     ],
-                  );
-                }
-            ),
-          ),
-        ),
-        // Users section header
-        SliverPadding(
-          padding: const EdgeInsets.only(bottom: 10),
-          sliver: SliverToBoxAdapter(
-            child: Text("Users", style: AppTextStyles.headingTextStyle),
-          ),
-        ),
-        // Search field
-        SliverPadding(
-          padding: const EdgeInsets.only(bottom: 10),
-          sliver: SliverToBoxAdapter(
-            child: _buildSearchTextField(),
+                  ),
+                  Card(
+                    color: Colors.white,
+                    elevation: 0,
+                    margin: EdgeInsets.only(right: 10),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.zero
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(15.0),
+                      child: Row(
+                        spacing: 20,
+                        children: [
+                          Expanded(child: SizedBox(
+                            height: 40,
+                            child: TextField(
+                              controller: _searchController,
+                              style: AppTextStyles.smallTextStyle,
+                              decoration: InputDecoration(
+                                enabledBorder: OutlineInputBorder(
+                                    borderSide: BorderSide(color: AppColors.textFieldFillColor)
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                    borderSide: BorderSide(color: AppColors.textFieldFillColor)
+                                ),
+                                hintText: 'Search by user name, trigger ID',
+                                hintStyle: AppTextStyles.smallTextStyle.copyWith(color: Colors.grey,),
+                              ),
+                            ),
+                          )),
+
+                          Expanded(child: FormField<String>(
+                            builder: (FormFieldState<String> state) {
+                              return InputDecorator(
+                                decoration: InputDecoration(
+                                  enabledBorder: OutlineInputBorder(
+                                      borderSide: BorderSide(color: AppColors.textFieldFillColor)),
+                                  labelStyle: AppTextStyles.smallTextStyle,
+                                  hintStyle: AppTextStyles.smallTextStyle.copyWith(color: Colors.grey),
+                                  contentPadding: EdgeInsets.symmetric(horizontal: 10),
+                                  errorStyle: AppTextStyles.regularTextStyle.copyWith(color: Colors.red),
+                                  // hintText: 'Please select expense',
+                                ),
+                                isEmpty: _selectedTriggerType == null,
+                                child: DropdownButtonHideUnderline(
+                                  child: DropdownButton<String>(
+                                    value: _selectedTriggerType,
+                                    hint: Text('Trigger Type', style: AppTextStyles.smallTextStyle,),
+                                    isDense: true,
+                                    elevation: 0,
+                                    dropdownColor: Colors.white,
+                                    onChanged: (String? newValue) {
+                                      setState(()=> _selectedTriggerType = newValue);
+                                    },
+                                    items: _triggerTypes.map((String value) {
+                                      return DropdownMenuItem<String>(
+                                          value: value,
+                                          child: Text(value)
+                                      );
+                                    }).toList(),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),)
+                        ],
+                      ),
+                    ),
+                  )
+                ],
+              )
           ),
         ),
         // Users list
@@ -110,11 +163,11 @@ class _ChatsTriggeredPageState extends State<ChatsTriggeredPage> {
   }
 
   Widget _buildUsersSliver() {
-    final currentUsers = _isInSearchMode ? _searchResults : _users;
-    final isCurrentlyLoading = _isInSearchMode ? _isSearching : _isLoading;
-    final hasMore = _isInSearchMode ? _hasMoreSearchResults : _hasMoreData;
+    // final currentUsers = _isInSearchMode ? _searchResults : _users;
+    // final isCurrentlyLoading = _isInSearchMode ? _isSearching : _isLoading;
+    // final hasMore = _isInSearchMode ? _hasMoreSearchResults : _hasMoreData;
 
-    if (currentUsers.isEmpty && !isCurrentlyLoading) {
+    if (_users.isEmpty && !_isLoading) {
       return SliverToBoxAdapter(
         child: Card(
           elevation: 1,
@@ -139,10 +192,9 @@ class _ChatsTriggeredPageState extends State<ChatsTriggeredPage> {
         color: Colors.white,
         child: Column(
           children: [
-            // User items
-            ...currentUsers.map((user) => _buildUserItem(user)),
+            _buildUsersTable(_users),
             // Loading indicator
-            if (isCurrentlyLoading || hasMore)
+            if (_isLoading || _hasMoreData)
               _buildLoadingIndicator(),
           ],
         ),
@@ -150,76 +202,137 @@ class _ChatsTriggeredPageState extends State<ChatsTriggeredPage> {
     );
   }
 
-  Widget _buildUserItem(EmailMessageTrackerModel user) {
-    List<String> playerTypes = [];
+  Widget _buildUsersTable(List<EmailMessageTrackerModel> users) {
+    if (users.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        child: Text(
+          'No users available',
+          style: AppTextStyles.regularTextStyle.copyWith(color: Colors.grey[600]),
+          textAlign: TextAlign.center,
+        ),
+      );
+    }
 
-    return ElevatedButton(
-      style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.zero
+    return SizedBox(
+      width: double.infinity,
+      child: DataTable(
+        columnSpacing: 16,
+        horizontalMargin: 0,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10.0), // Rounded corners
+          border: Border.all(
+            color: AppColors.primaryColor.withValues(alpha: 0.5),
+            width: 1,
           ),
-          surfaceTintColor: Colors.white,
-          overlayColor: Colors.grey[300]
-      ),
-      onPressed: () {
-        // Handle user selection if needed
-      },
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(15.0),
-            child: Row(
-              spacing: 20,
-              children: [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundColor: AppColors.textFieldFillColor,
-                  child: Text(
-                    user.triggeredByUName.isNotEmpty ? user.triggeredByUName[0].toUpperCase() : '?',
-                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    spacing: 5,
-                    children: [
-                      Text(
-                          user.triggeredByUName.isNotEmpty ? user.triggeredByUName : 'Unknown User',
-                          style: AppTextStyles.regularTextStyle.copyWith(fontWeight: FontWeight.w600)
-                      ),
-
-                      // if (user.triggeredType.isNotEmpty)
-                        Text(
-                          user.triggeredType,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      const SizedBox(height: 10),
-                      if (playerTypes.isNotEmpty)
-                        Wrap(
-                          spacing: 10,
-                          runSpacing: 5,
-                          children: playerTypes
-                              .map((type) => _buildPlayerTypeItem(playerType: type))
-                              .toList(),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
+        ),
+        headingRowColor: WidgetStateProperty.all(AppColors.primaryColor.withValues(alpha: 0.1)),
+        headingRowHeight: 56,
+        dataRowMinHeight: 72,
+        dataRowMaxHeight: 72,
+        border: TableBorder.all(
+          color: AppColors.primaryColor.withValues(alpha: 0.1),
+          width: 1,
+        ),
+        columns: [
+          DataColumn(
+            label: SizedBox(
+                width: 80,
+                child: Center(child: TableColumnWidget(title: 'Track ID'))
             ),
           ),
-          Container(
-            height: 1,
-            color: Colors.black12,
-          )
+          DataColumn(
+            label: Expanded(
+                flex: 2,
+                child: TableColumnWidget(title: 'Trigger By')
+            ),
+          ),
+          DataColumn(
+            label: Expanded(
+                flex: 3,
+                child: TableColumnWidget(title: 'Triggered For')
+            ),
+          ),
+          DataColumn(
+            label: Expanded(
+                flex: 2,
+                child: TableColumnWidget(title: 'Triggered On')
+            ),
+            numeric: true,
+          ),
+          DataColumn(
+            label: Expanded(
+                flex: 2,
+                child: TableColumnWidget(title: 'Trigger Type')
+            ),
+          ),
         ],
+        rows: users.map((user) => _buildDataRow(user)).toList(),
       ),
     );
   }
+
+  DataRow _buildDataRow(EmailMessageTrackerModel user) {
+    return DataRow(
+      cells: [
+        DataCell(
+          Center(
+            child: Text(
+              user.trackID,
+              style: AppTextStyles.regularTextStyle.copyWith(
+                fontWeight: FontWeight.w600,
+                color: AppColors.primaryColor,
+              ),
+            )
+          ),
+        ),
+        DataCell(
+          SizedBox(
+            width: double.infinity,
+            child: Text(
+              user.triggeredByUName,
+              style: AppTextStyles.regularTextStyle,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ),
+        DataCell(
+          SizedBox(
+            width: double.infinity,
+            child: Text(
+              user.triggeredForUName,
+              style: AppTextStyles.smallTextStyle.copyWith(color: Colors.grey[600]),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ),
+        DataCell(
+          SizedBox(
+            width: double.infinity,
+            child: Text(
+              DateTimeHelper.formatDateTime(user.triggeredOn),
+              style: AppTextStyles.smallTextStyle.copyWith(color: Colors.grey[600]),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ),
+        DataCell(
+          SizedBox(
+            width: double.infinity,
+            child: Text(
+              user.triggeredType,
+              style: AppTextStyles.smallTextStyle.copyWith(color: Colors.grey[600]),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
 
   Widget _buildEmptyState() {
     return Center(
@@ -285,20 +398,6 @@ class _ChatsTriggeredPageState extends State<ChatsTriggeredPage> {
     );
   }
 
-  Widget _buildPlayerTypeItem({required String playerType}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(99),
-        color: AppColors.textFieldFillColor,
-      ),
-      child: Text(
-        playerType,
-        style: TextStyle(fontSize: 12, color: AppColors.primaryColor),
-      ),
-    );
-  }
-
   Widget _buildInfoItemWidget({required String title, required int value}) {
     return Container(
       decoration: BoxDecoration(
@@ -346,13 +445,11 @@ class _ChatsTriggeredPageState extends State<ChatsTriggeredPage> {
   Future<void> _loadUsers() async {
     if (_isLoading) return;
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() =>  _isLoading = true);
 
     try {
       Query query = _firestore
-          .collection(chatClickTrackerCollection)
+          .collection(chatClickTrackerCollection).orderBy('trackID', descending: true)
           .limit(_pageSize);
 
       if (_lastDocument != null) {
@@ -426,7 +523,7 @@ class _ChatsTriggeredPageState extends State<ChatsTriggeredPage> {
 
       // Search by userName (primary search)
       Query searchQuery = _firestore
-          .collection('chatClickTrackerCollection')
+          .collection(chatClickTrackerCollection)
           .orderBy('triggeredByUName')
           .where('triggeredByUName', isGreaterThanOrEqualTo: query)
           .where('triggeredByUName', isLessThan: query + '\uf8ff')
