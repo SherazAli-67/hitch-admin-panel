@@ -10,8 +10,28 @@ import 'package:hitch_tracker/src/res/app_textstyles.dart';
 import 'package:hitch_tracker/src/res/string_constants.dart';
 import 'package:provider/provider.dart';
 
-class HomeDesktopPage extends StatelessWidget{
+class HomeDesktopPage extends StatefulWidget{
   const HomeDesktopPage({super.key});
+
+  @override
+  State<HomeDesktopPage> createState() => _HomeDesktopPageState();
+}
+
+class _HomeDesktopPageState extends State<HomeDesktopPage> {
+  // Create widget instances once and keep them alive
+  late final List<Widget> _pages;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize all page widgets once
+    _pages = [
+      DashboardPage(),
+      RequestedHitchesPage(),
+      AcceptedHitchRequestsPage(),
+      ChatsTriggeredPage(),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -199,20 +219,11 @@ class HomeDesktopPage extends StatelessWidget{
     );
   }
 
-  _buildMenuPageWidget(int selectedIndex) {
-    switch(selectedIndex){
-      case 0:
-        return DashboardPage();
-
-      case 1:
-        return RequestedHitchesPage();
-
-      case 2:
-        return AcceptedHitchRequestsPage();
-
-      case 3:
-        return ChatsTriggeredPage();
-    }
+  Widget _buildMenuPageWidget(int selectedIndex) {
+    return IndexedStack(
+      index: selectedIndex,
+      children: _pages,
+    );
   }
 
 }

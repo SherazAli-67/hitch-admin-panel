@@ -19,7 +19,10 @@ class ChatsTriggeredPage extends StatefulWidget {
   State<ChatsTriggeredPage> createState() => _ChatsTriggeredPageState();
 }
 
-class _ChatsTriggeredPageState extends State<ChatsTriggeredPage> {
+class _ChatsTriggeredPageState extends State<ChatsTriggeredPage> with AutomaticKeepAliveClientMixin {
+
+  @override
+  bool get wantKeepAlive => true;
 
   String? _selectedTriggerType;
 
@@ -67,6 +70,7 @@ class _ChatsTriggeredPageState extends State<ChatsTriggeredPage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     return CustomScrollView(
       controller: _scrollController,
       slivers: [

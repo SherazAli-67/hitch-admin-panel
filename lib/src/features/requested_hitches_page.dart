@@ -16,7 +16,11 @@ class RequestedHitchesPage extends StatefulWidget {
   State<RequestedHitchesPage> createState() => _RequestedHitchesPageState();
 }
 
-class _RequestedHitchesPageState extends State<RequestedHitchesPage> {
+class _RequestedHitchesPageState extends State<RequestedHitchesPage> with AutomaticKeepAliveClientMixin {
+
+  @override
+  bool get wantKeepAlive => true;
+
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
@@ -55,6 +59,7 @@ class _RequestedHitchesPageState extends State<RequestedHitchesPage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     return CustomScrollView(
       controller: _scrollController,
       slivers: [

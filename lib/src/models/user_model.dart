@@ -46,6 +46,7 @@ class UserModel {
   List<String> availableDaysToPlay;
   bool showEventsNoti = true;
   int? lastActive;
+  String? locationString;
   String get lastActiveTime {
     if (lastActive == null) {
       return '';
@@ -96,6 +97,7 @@ class UserModel {
       required this.availableDaysToPlay,
       this.showEventsNoti = true,
       this.isReviewed = false,
+        this.locationString,
       this.lastActive});
 
   Map<String, dynamic> toMap() {
@@ -144,6 +146,7 @@ class UserModel {
       availableDaysToPlayKey: availableDaysToPlay,
       isReviewedKey: isReviewed,
       'lastActive': lastActive,
+      'locationString' : locationString
     };
   }
 
@@ -218,6 +221,7 @@ class UserModel {
         genderType: map[genderTypeKey] ?? 'Both',
         isReviewed: map[isReviewedKey] ?? false,
         lastActive: map['lastActive'],
+        locationString: map['locationString'],
         availableDaysToPlay: List<String>.from(
           map[availableDaysToPlayKey] ?? [],
         ));

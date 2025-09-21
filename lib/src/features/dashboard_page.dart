@@ -16,7 +16,10 @@ class DashboardPage extends StatefulWidget {
   State<DashboardPage> createState() => _DashboardPageState();
 }
 
-class _DashboardPageState extends State<DashboardPage> {
+class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveClientMixin {
+
+  @override
+  bool get wantKeepAlive => true;
 
   String? _selectedPlayerType;
 
@@ -66,6 +69,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     return CustomScrollView(
       controller: _scrollController,
       slivers: [
@@ -255,7 +259,12 @@ class _DashboardPageState extends State<DashboardPage> {
                         user.userName.isNotEmpty ? user.userName : 'Unknown User',
                         style: AppTextStyles.regularTextStyle.copyWith(fontWeight: FontWeight.w600)
                     ),
-                    if (user.latitude != null && user.longitude != null)
+                    if(user.locationString != null)
+                      Text(
+                        user.locationString!,
+                        style: AppTextStyles.smallTextStyle,
+                      ),
+                    /*if (user.latitude != null && user.longitude != null)
                       FutureBuilder(future: HitchesService.getUserLocationFromLatLng(user.latitude!, user.longitude!), builder: (_, snapshot){
                         if(snapshot.hasData){
                           return Text(
@@ -264,7 +273,7 @@ class _DashboardPageState extends State<DashboardPage> {
                           );
                         }
                         return SizedBox();
-                      }),
+                      }),*/
                     if (user.bio.isNotEmpty)
                       Text(
                         user.bio,
@@ -603,6 +612,11 @@ class _DashboardPageState extends State<DashboardPage> {
         await _searchBioField(queryLower, results);
       }
 
+      // If we still don't have enough results, search locationString field
+      if (results.length < 10 && _lastSearchDocument == null) {
+        await _searchLocationField(queryLower, results);
+      }
+
       setState(() {
         if (_lastSearchDocument == null || _searchResults.isEmpty) {
           _searchResults = results;
@@ -650,6 +664,34 @@ class _DashboardPageState extends State<DashboardPage> {
       }
     } catch (e) {
       debugPrint('Bio search error: $e');
+    }
+  }
+
+  Future<void> _searchLocationField(String queryLower, List<UserModel> existingResults) async {
+    try {
+      // Search in locationString field for additional results
+      final QuerySnapshot locationSnapshot = await _firestore
+          .collection('users')
+          .where('locationString', isGreaterThanOrEqualTo: queryLower)
+          .where('locationString', isLessThan: queryLower + '\uf8ff')
+          .limit(_pageSize - existingResults.length)
+          .get();
+
+      if (locationSnapshot.docs.isNotEmpty) {
+        List<UserModel> locationResults = locationSnapshot.docs
+            .map((doc) => UserModel.fromMap(doc.data() as Map<String, dynamic>))
+            .where((user) => !existingResults.any((existing) => existing.userID == user.userID))
+            .toList();
+
+        // Apply player type filter to location search results if selected
+        if (_selectedPlayerType != null) {
+          locationResults = _filterUsersByPlayerType(locationResults, _selectedPlayerType!);
+        }
+
+        existingResults.addAll(locationResults);
+      }
+    } catch (e) {
+      debugPrint('Location search error: $e');
     }
   }
 
