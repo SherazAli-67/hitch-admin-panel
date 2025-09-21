@@ -134,7 +134,23 @@ class _DashboardPageState extends State<DashboardPage> {
                                   elevation: 0,
                                   dropdownColor: Colors.white,
                                   onChanged: (String? newValue) {
-                                    setState(()=> _selectedPlayerType = newValue);
+                                    setState(() {
+                                      _selectedPlayerType = newValue;
+                                      // Reset data when filter changes
+                                      _users.clear();
+                                      _searchResults.clear();
+                                      _lastDocument = null;
+                                      _lastSearchDocument = null;
+                                      _hasMoreData = true;
+                                      _hasMoreSearchResults = true;
+                                    });
+                                    
+                                    // Reload data with new filter
+                                    if (_isInSearchMode) {
+                                      _performFirebaseSearch();
+                                    } else {
+                                      _loadUsers();
+                                    }
                                   },
                                   items: _playerTypes.map((String value) {
                                     return DropdownMenuItem<String>(
