@@ -2,13 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:hitch_tracker/src/helpers/date_time_helper.dart';
 import 'package:hitch_tracker/src/models/chat_trigger_model.dart';
-import 'package:hitch_tracker/src/providers/hitch_count_provider.dart';
 import 'package:hitch_tracker/src/res/app_colors.dart';
 import 'package:hitch_tracker/src/res/app_textstyles.dart';
 import 'dart:async';
-
-import 'package:provider/provider.dart';
-
 import '../res/string_constants.dart';
 import '../widgets/table_column_title_widget.dart';
 

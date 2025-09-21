@@ -83,7 +83,12 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text("All Users", style: AppTextStyles.headingTextStyle,),
+                    GestureDetector(
+                        onTap:()async{
+                          // await FirebaseFirestore.instance.collection('location_trigger').add({'lowerCaseTest' :  'test'});
+                          // debugPrint("Record added");
+                        },
+                        child: Text("All Users", style: AppTextStyles.headingTextStyle,)),
                     Text('A comprehensive list of all users on the Hitch Platform', style: AppTextStyles.smallTextStyle,)
                   ],
                 ),
@@ -260,7 +265,7 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
                         style: AppTextStyles.regularTextStyle.copyWith(fontWeight: FontWeight.w600)
                     ),
                     if(user.locationString != null)
-                      Text(
+                      SelectableText(
                         user.locationString!,
                         style: AppTextStyles.smallTextStyle,
                       ),
@@ -669,11 +674,10 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
 
   Future<void> _searchLocationField(String queryLower, List<UserModel> existingResults) async {
     try {
-      // Search in locationString field for additional results
+      // Search in locattionStringArray field using array-contains for additional results
       final QuerySnapshot locationSnapshot = await _firestore
           .collection('users')
-          .where('locationString', isGreaterThanOrEqualTo: queryLower)
-          .where('locationString', isLessThan: queryLower + '\uf8ff')
+          .where('locationStringArray', arrayContains: queryLower)
           .limit(_pageSize - existingResults.length)
           .get();
 
