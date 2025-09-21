@@ -425,6 +425,21 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
+  String _getPlayerTypeFieldName(String playerType) {
+    switch (playerType) {
+      case playerTypePickleBallValue:
+        return 'playerTypePickle';
+      case playerTypeTennisValue:
+        return 'playerTypeTennis';
+      case playerTypePadelValue:
+        return 'playerTypePadel';
+      case playerTypeCoachValue:
+        return 'playerTypeCoach';
+      default:
+        return '';
+    }
+  }
+
   void _onScroll() {
     if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent * 0.8) {
       if (_isInSearchMode) {
@@ -462,6 +477,12 @@ class _DashboardPageState extends State<DashboardPage> {
       Query query = _firestore
           .collection('users')
           .limit(_pageSize);
+
+      // Apply player type filter if selected
+      if (_selectedPlayerType != null) {
+        String fieldName = _getPlayerTypeFieldName(_selectedPlayerType!);
+        query = query.where(fieldName, isEqualTo: true);
+      }
 
       if (_lastDocument != null) {
         query = query.startAfterDocument(_lastDocument!);
