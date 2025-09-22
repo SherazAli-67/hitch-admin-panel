@@ -574,12 +574,21 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
     await _loadUsers();
   }
 
+  void _resetSearchPagination() {
+    _lastUserNameDoc = null;
+    _lastBioDoc = null;
+    _lastLocationDoc = null;
+    _hasMoreUserName = true;
+    _hasMoreBio = true;
+    _hasMoreLocation = true;
+  }
+
   Future<void> _performFirebaseSearch() async {
     if (_searchQuery.isEmpty) {
       setState(() {
         _isInSearchMode = false;
         _searchResults.clear();
-        _lastSearchDocument = null;
+        _resetSearchPagination();
         _hasMoreSearchResults = true;
       });
       return;
@@ -593,7 +602,7 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
     setState(() {
       _isSearching = true;
       _searchResults.clear();
-      _lastSearchDocument = null;
+      _resetSearchPagination();
       _hasMoreSearchResults = true;
     });
 
@@ -604,53 +613,48 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
     try {
       final String queryLower = query.toLowerCase();
 
-      // Search by userName (primary search)
-      Query searchQuery = _firestore
-          .collection('users')
-          .orderBy('userName')
-          .where('userName', isGreaterThanOrEqualTo: query)
-          .where('userName', isLessThan: query + '\uf8ff')
-          .limit(_pageSize);
+      // Perform parallel searches across all fields
+      final List<Future<List<UserModel>>> searchFutures = [
+        _searchUserNameField(query),
+        _searchBioField(queryLower),
+        _searchLocationField(queryLower),
+      ];
 
-      if (_lastSearchDocument != null) {
-        searchQuery = searchQuery.startAfterDocument(_lastSearchDocument!);
-      }
-
-      final QuerySnapshot snapshot = await searchQuery.get();
-      List<UserModel> results = [];
-
-      if (snapshot.docs.isNotEmpty) {
-        List<UserModel> allResults = snapshot.docs
-            .map((doc) => UserModel.fromMap(doc.data() as Map<String, dynamic>))
-            .toList();
-
-        // Apply player type filter to search results if selected
-        if (_selectedPlayerType != null) {
-          results = _filterUsersByPlayerType(allResults, _selectedPlayerType!);
-        } else {
-          results = allResults;
+      final List<List<UserModel>> searchResultsLists = await Future.wait(searchFutures);
+      
+      // Combine and deduplicate results
+      List<UserModel> combinedResults = [];
+      Set<String> seenUserIds = {};
+      
+      for (List<UserModel> resultsList in searchResultsLists) {
+        for (UserModel user in resultsList) {
+          if (!seenUserIds.contains(user.userID)) {
+            seenUserIds.add(user.userID);
+            combinedResults.add(user);
+          }
         }
-
-        _lastSearchDocument = snapshot.docs.last;
       }
 
-      // If we don't have enough results from userName search, search bio field
-      if (results.length < 10 && _lastSearchDocument == null) {
-        await _searchBioField(queryLower, results);
+      // Apply player type filter if selected
+      if (_selectedPlayerType != null) {
+        combinedResults = _filterUsersByPlayerType(combinedResults, _selectedPlayerType!);
       }
 
-      // If we still don't have enough results, search locationString field
-      if (results.length < 10 && _lastSearchDocument == null) {
-        await _searchLocationField(queryLower, results);
-      }
+      // Check if we have more results available from any field
+      bool hasMoreResults = _hasMoreUserName || _hasMoreBio || _hasMoreLocation;
 
       setState(() {
-        if (_lastSearchDocument == null || _searchResults.isEmpty) {
-          _searchResults = results;
+        if (_searchResults.isEmpty) {
+          _searchResults = combinedResults;
         } else {
-          _searchResults.addAll(results);
+          // Add new results, avoiding duplicates
+          for (UserModel user in combinedResults) {
+            if (!_searchResults.any((existing) => existing.userID == user.userID)) {
+              _searchResults.add(user);
+            }
+          }
         }
-        _hasMoreSearchResults = snapshot.docs.length == _pageSize;
+        _hasMoreSearchResults = hasMoreResults;
         _isSearching = false;
       });
 
@@ -666,63 +670,118 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
     }
   }
 
-  Future<void> _searchBioField(String queryLower, List<UserModel> existingResults) async {
+  Future<List<UserModel>> _searchUserNameField(String query) async {
     try {
-      // Search in bio field for additional results
-      final QuerySnapshot bioSnapshot = await _firestore
+      if (!_hasMoreUserName) return [];
+
+      Query searchQuery = _firestore
           .collection('users')
-          .where('bio', isGreaterThanOrEqualTo: queryLower)
-          .where('bio', isLessThan: queryLower + '\uf8ff')
-          .limit(_pageSize - existingResults.length)
-          .get();
+          .orderBy('userName')
+          .where('userName', isGreaterThanOrEqualTo: query)
+          .where('userName', isLessThan: query + '\uf8ff')
+          .limit(_pageSize);
 
-      if (bioSnapshot.docs.isNotEmpty) {
-        List<UserModel> bioResults = bioSnapshot.docs
+      if (_lastUserNameDoc != null) {
+        searchQuery = searchQuery.startAfterDocument(_lastUserNameDoc!);
+      }
+
+      final QuerySnapshot snapshot = await searchQuery.get();
+      
+      if (snapshot.docs.isNotEmpty) {
+        _lastUserNameDoc = snapshot.docs.last;
+        _hasMoreUserName = snapshot.docs.length == _pageSize;
+        
+        return snapshot.docs
             .map((doc) => UserModel.fromMap(doc.data() as Map<String, dynamic>))
-            .where((user) => !existingResults.any((existing) => existing.userID == user.userID))
             .toList();
-
-        // Apply player type filter to bio search results if selected
-        if (_selectedPlayerType != null) {
-          bioResults = _filterUsersByPlayerType(bioResults, _selectedPlayerType!);
-        }
-
-        existingResults.addAll(bioResults);
+      } else {
+        _hasMoreUserName = false;
+        return [];
       }
     } catch (e) {
-      debugPrint('Bio search error: $e');
+      debugPrint('UserName search error: $e');
+      _hasMoreUserName = false;
+      return [];
     }
   }
 
-  Future<void> _searchLocationField(String queryLower, List<UserModel> existingResults) async {
+  Future<List<UserModel>> _searchBioField(String queryLower) async {
     try {
-      // Search in locattionStringArray field using array-contains for additional results
-      final QuerySnapshot locationSnapshot = await _firestore
+      if (!_hasMoreBio) return [];
+
+      Query bioQuery = _firestore
+          .collection('users')
+          .orderBy('bio')
+          .where('bio', isGreaterThanOrEqualTo: queryLower)
+          .where('bio', isLessThan: queryLower + '\uf8ff')
+          .limit(_pageSize);
+
+      if (_lastBioDoc != null) {
+        bioQuery = bioQuery.startAfterDocument(_lastBioDoc!);
+      }
+
+      final QuerySnapshot bioSnapshot = await bioQuery.get();
+      
+      if (bioSnapshot.docs.isNotEmpty) {
+        _lastBioDoc = bioSnapshot.docs.last;
+        _hasMoreBio = bioSnapshot.docs.length == _pageSize;
+        
+        return bioSnapshot.docs
+            .map((doc) => UserModel.fromMap(doc.data() as Map<String, dynamic>))
+            .toList();
+      } else {
+        _hasMoreBio = false;
+        return [];
+      }
+    } catch (e) {
+      debugPrint('Bio search error: $e');
+      _hasMoreBio = false;
+      return [];
+    }
+  }
+
+  Future<List<UserModel>> _searchLocationField(String queryLower) async {
+    try {
+      if (!_hasMoreLocation) return [];
+
+      // For location search using array-contains, we need to use a different approach
+      // since we can't easily paginate array-contains queries with startAfterDocument
+      Query locationQuery = _firestore
           .collection('users')
           .where('locationStringArray', arrayContains: queryLower)
-          .limit(_pageSize - existingResults.length)
-          .get();
+          .limit(_pageSize);
 
+      if (_lastLocationDoc != null) {
+        locationQuery = locationQuery.startAfterDocument(_lastLocationDoc!);
+      }
+
+      final QuerySnapshot locationSnapshot = await locationQuery.get();
+      
       if (locationSnapshot.docs.isNotEmpty) {
-        List<UserModel> locationResults = locationSnapshot.docs
+        _lastLocationDoc = locationSnapshot.docs.last;
+        _hasMoreLocation = locationSnapshot.docs.length == _pageSize;
+        
+        return locationSnapshot.docs
             .map((doc) => UserModel.fromMap(doc.data() as Map<String, dynamic>))
-            .where((user) => !existingResults.any((existing) => existing.userID == user.userID))
             .toList();
-
-        // Apply player type filter to location search results if selected
-        if (_selectedPlayerType != null) {
-          locationResults = _filterUsersByPlayerType(locationResults, _selectedPlayerType!);
-        }
-
-        existingResults.addAll(locationResults);
+      } else {
+        _hasMoreLocation = false;
+        return [];
       }
     } catch (e) {
       debugPrint('Location search error: $e');
+      _hasMoreLocation = false;
+      return [];
     }
   }
 
   Future<void> _loadMoreSearchResults() async {
     if (_isSearching || !_hasMoreSearchResults) return;
+    
+    setState(() {
+      _isSearching = true;
+    });
+    
     await _searchInFirebase(_searchQuery);
   }
 
