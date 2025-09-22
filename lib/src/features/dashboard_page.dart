@@ -45,7 +45,15 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
   bool _hasMoreData = true;
   bool _hasMoreSearchResults = true;
   DocumentSnapshot? _lastDocument;
-  DocumentSnapshot? _lastSearchDocument;
+  
+  // Separate pagination tracking for each search field
+  DocumentSnapshot? _lastUserNameDoc;
+  DocumentSnapshot? _lastBioDoc;
+  DocumentSnapshot? _lastLocationDoc;
+  bool _hasMoreUserName = true;
+  bool _hasMoreBio = true;
+  bool _hasMoreLocation = true;
+  
   Timer? _debounceTimer;
   String _searchQuery = '';
   bool _isInSearchMode = false;
