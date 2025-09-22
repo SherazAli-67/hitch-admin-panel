@@ -51,7 +51,7 @@ class _ChatsTriggeredPageState extends State<ChatsTriggeredPage> with AutomaticK
   @override
   void initState() {
     super.initState();
-    _loadUsers();
+    _loadChats();
     _scrollController.addListener(_onScroll);
     _searchController.addListener(_onSearchChanged);
   }
@@ -452,14 +452,14 @@ class _ChatsTriggeredPageState extends State<ChatsTriggeredPage> with AutomaticK
     });
   }
 
-  Future<void> _loadUsers() async {
+  Future<void> _loadChats() async {
     if (_isLoading) return;
 
     setState(() =>  _isLoading = true);
 
     try {
       Query query = _firestore
-          .collection(chatClickTrackerCollection).orderBy('trackID', descending: true)
+          .collection(chatClickTrackerCollection).orderBy('triggeredOn', descending: true)
           .limit(_pageSize);
 
       if (_lastDocument != null) {
@@ -498,7 +498,7 @@ class _ChatsTriggeredPageState extends State<ChatsTriggeredPage> with AutomaticK
   }
 
   Future<void> _loadMoreUsers() async {
-    await _loadUsers();
+    await _loadChats();
   }
 
   Future<void> _performFirebaseSearch() async {
