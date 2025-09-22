@@ -171,7 +171,7 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
                                       _users.clear();
                                       _searchResults.clear();
                                       _lastDocument = null;
-                                      _lastSearchDocument = null;
+                                      _resetSearchPagination();
                                       _hasMoreData = true;
                                       _hasMoreSearchResults = true;
                                     });
