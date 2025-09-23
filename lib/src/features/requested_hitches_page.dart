@@ -39,6 +39,10 @@ class _RequestedHitchesPageState extends State<RequestedHitchesPage> with Automa
   String _searchQuery = '';
   bool _isInSearchMode = false;
 
+  // Search results count
+  int? _totalSearchCount;
+  bool _isCountLoading = false;
+
   static const int _pageSize = 20;
 
   @override
