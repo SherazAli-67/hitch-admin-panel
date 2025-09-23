@@ -354,6 +354,59 @@ class _RequestedHitchesPageState extends State<RequestedHitchesPage> with Automa
     );
   }
 
+  Widget _buildSearchResultsCount() {
+    if (_isInSearchMode) {
+      if (_isCountLoading) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 12,
+                height: 12,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryColor),
+                ),
+              ),
+              SizedBox(width: 8),
+              Text(
+                "Counting results...",
+                style: AppTextStyles.smallTextStyle.copyWith(
+                  color: Colors.grey[600],
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+      if (_totalSearchCount != null) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+          child: Text(
+            "Found $_totalSearchCount total result${_totalSearchCount == 1 ? '' : 's'} for '$_searchQuery'",
+            style: AppTextStyles.smallTextStyle.copyWith(
+              color: AppColors.primaryColor,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        );
+      }
+    } else if (!_isInSearchMode && _users.isNotEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+        child: Text(
+          "Showing ${_users.length} record${_users.length == 1 ? '' : 's'}",
+          style: AppTextStyles.smallTextStyle.copyWith(
+            color: Colors.grey[600],
+          ),
+        ),
+      );
+    }
+    return SizedBox.shrink();
+  }
+
   void _onScroll() {
     if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent * 0.8) {
       if (_isInSearchMode) {
@@ -432,6 +485,7 @@ class _RequestedHitchesPageState extends State<RequestedHitchesPage> with Automa
         _searchResults.clear();
         _lastSearchDocument = null;
         _hasMoreSearchResults = true;
+        _totalSearchCount = null;
       });
       return;
     }
@@ -446,7 +500,11 @@ class _RequestedHitchesPageState extends State<RequestedHitchesPage> with Automa
       _searchResults.clear();
       _lastSearchDocument = null;
       _hasMoreSearchResults = true;
+      _totalSearchCount = null;
     });
+
+    // Start count query in parallel
+    _getSearchResultsCount(_searchQuery);
 
     await _searchInFirebase(_searchQuery);
   }
@@ -501,6 +559,36 @@ class _RequestedHitchesPageState extends State<RequestedHitchesPage> with Automa
   Future<void> _loadMoreSearchResults() async {
     if (_isSearching || !_hasMoreSearchResults) return;
     await _searchInFirebase(_searchQuery);
+  }
+
+  Future<void> _getSearchResultsCount(String query) async {
+    if (_isCountLoading) return;
+    
+    setState(() {
+      _isCountLoading = true;
+    });
+
+    try {
+      // Search count query for userName field
+      Query countQuery = _firestore
+          .collection('hitches_tracker').doc('hitch_tracker_doc').collection('users')
+          .where('userName', isGreaterThanOrEqualTo: query)
+          .where('userName', isLessThan: query + '\uf8ff');
+      
+      final AggregateQuerySnapshot countResult = await countQuery.count().get();
+      
+      setState(() {
+        _totalSearchCount = countResult.count ?? 0;
+        _isCountLoading = false;
+      });
+      
+    } catch (e) {
+      debugPrint('Error getting search count: $e');
+      setState(() {
+        _isCountLoading = false;
+        _totalSearchCount = null;
+      });
+    }
   }
 
 }
