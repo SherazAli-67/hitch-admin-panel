@@ -650,6 +650,7 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
         _searchResults.clear();
         _resetSearchPagination();
         _hasMoreSearchResults = true;
+        _totalSearchCount = null;
       });
       return;
     }
@@ -664,7 +665,11 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
       _searchResults.clear();
       _resetSearchPagination();
       _hasMoreSearchResults = true;
+      _totalSearchCount = null;
     });
+
+    // Start count query in parallel
+    _getSearchResultsCount(_searchQuery);
 
     await _searchInFirebase(_searchQuery);
   }
@@ -843,6 +848,82 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
     });
     
     await _searchInFirebase(_searchQuery);
+  }
+
+  Future<void> _getSearchResultsCount(String query) async {
+    if (_isCountLoading) return;
+    
+    setState(() {
+      _isCountLoading = true;
+    });
+
+    try {
+      final String queryLower = query.toLowerCase();
+      
+      // Build count queries for all search fields
+      List<Future<AggregateQuerySnapshot>> countFutures = [];
+      
+      // UserName count query
+      Query userNameCountQuery = _firestore
+          .collection('users')
+          .where('userName', isGreaterThanOrEqualTo: query)
+          .where('userName', isLessThan: query + '\uf8ff');
+      
+      // Apply player type filter if selected
+      if (_selectedPlayerType != null) {
+        String fieldName = _getPlayerTypeFieldName(_selectedPlayerType!);
+        userNameCountQuery = userNameCountQuery.where(fieldName, isEqualTo: true);
+      }
+      
+      countFutures.add(userNameCountQuery.count().get());
+      
+      // Bio count query
+      Query bioCountQuery = _firestore
+          .collection('users')
+          .where('bio', isGreaterThanOrEqualTo: queryLower)
+          .where('bio', isLessThan: queryLower + '\uf8ff');
+      
+      if (_selectedPlayerType != null) {
+        String fieldName = _getPlayerTypeFieldName(_selectedPlayerType!);
+        bioCountQuery = bioCountQuery.where(fieldName, isEqualTo: true);
+      }
+      
+      countFutures.add(bioCountQuery.count().get());
+      
+      // Location count query (array-contains)
+      Query locationCountQuery = _firestore
+          .collection('users')
+          .where('locationStringArray', arrayContains: queryLower);
+      
+      if (_selectedPlayerType != null) {
+        String fieldName = _getPlayerTypeFieldName(_selectedPlayerType!);
+        locationCountQuery = locationCountQuery.where(fieldName, isEqualTo: true);
+      }
+      
+      countFutures.add(locationCountQuery.count().get());
+      
+      // Execute all count queries in parallel
+      final List<AggregateQuerySnapshot> countResults = await Future.wait(countFutures);
+      
+      // Sum up counts but note: this gives total matches across all fields
+      // which may include duplicates, but provides a good approximation
+      int totalCount = 0;
+      for (var result in countResults) {
+        totalCount += result.count ?? 0;
+      }
+      
+      setState(() {
+        _totalSearchCount = totalCount;
+        _isCountLoading = false;
+      });
+      
+    } catch (e) {
+      debugPrint('Error getting search count: $e');
+      setState(() {
+        _isCountLoading = false;
+        _totalSearchCount = null;
+      });
+    }
   }
 
  /* Future<void> _refreshUsers() async {
