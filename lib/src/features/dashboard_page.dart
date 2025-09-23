@@ -58,6 +58,10 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
   String _searchQuery = '';
   bool _isInSearchMode = false;
   
+  // Search results count
+  int? _totalSearchCount;
+  bool _isCountLoading = false;
+  
   static const int _pageSize = 20;
 
   @override
