@@ -178,6 +178,7 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
                                       _resetSearchPagination();
                                       _hasMoreData = true;
                                       _hasMoreSearchResults = true;
+                                      _totalSearchCount = null;
                                     });
                                     
                                     // Reload data with new filter
@@ -201,7 +202,9 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
                       ],
                     ),
                   ),
-                )
+                ),
+                // Search results count
+                _buildSearchResultsCount(),
               ],
             )
           ),
@@ -449,7 +452,60 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
     );
   }
 
-
+  Widget _buildSearchResultsCount() {
+    if (_isInSearchMode) {
+      if (_isCountLoading) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 12,
+                height: 12,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryColor),
+                ),
+              ),
+              SizedBox(width: 8),
+              Text(
+                "Counting results...",
+                style: AppTextStyles.smallTextStyle.copyWith(
+                  color: Colors.grey[600],
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+      if (_totalSearchCount != null) {
+        String filterText = _selectedPlayerType != null ? " with ${_selectedPlayerType!} filter" : "";
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+          child: Text(
+            "Found $_totalSearchCount total result${_totalSearchCount == 1 ? '' : 's'} for '$_searchQuery'$filterText",
+            style: AppTextStyles.smallTextStyle.copyWith(
+              color: AppColors.primaryColor,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        );
+      }
+    } else if (!_isInSearchMode && _users.isNotEmpty) {
+      String filterText = _selectedPlayerType != null ? " (${_selectedPlayerType!} filter)" : "";
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+        child: Text(
+          "Showing ${_users.length} record${_users.length == 1 ? '' : 's'}$filterText",
+          style: AppTextStyles.smallTextStyle.copyWith(
+            color: Colors.grey[600],
+          ),
+        ),
+      );
+    }
+    return SizedBox.shrink();
+  }
 
   Widget _buildPlayerTypeItem({required String playerType}) {
     return Container(
