@@ -94,33 +94,40 @@ class _RequestedHitchesPageState extends State<RequestedHitchesPage> with Automa
         SliverPadding(
           padding: const EdgeInsets.only(top: 10, bottom: 10, right: 100),
           sliver: SliverToBoxAdapter(
-              child: Card(
-                color: Colors.white,
-                elevation: 0,
-                margin: EdgeInsets.only(right: 10),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.zero
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(15.0),
-                  child: SizedBox(
-                    height: 40,
-                    child: TextField(
-                      controller: _searchController,
-                      style: AppTextStyles.smallTextStyle,
-                      decoration: InputDecoration(
-                        enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: AppColors.textFieldFillColor)
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Card(
+                    color: Colors.white,
+                    elevation: 0,
+                    margin: EdgeInsets.only(right: 10),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.zero
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(15.0),
+                      child: SizedBox(
+                        height: 40,
+                        child: TextField(
+                          controller: _searchController,
+                          style: AppTextStyles.smallTextStyle,
+                          decoration: InputDecoration(
+                            enabledBorder: OutlineInputBorder(
+                                borderSide: BorderSide(color: AppColors.textFieldFillColor)
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                                borderSide: BorderSide(color: AppColors.textFieldFillColor)
+                            ),
+                            hintText: 'Search by name',
+                            hintStyle: AppTextStyles.smallTextStyle.copyWith(color: Colors.grey,),
+                          ),
                         ),
-                        focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: AppColors.textFieldFillColor)
-                        ),
-                        hintText: 'Search by name',
-                        hintStyle: AppTextStyles.smallTextStyle.copyWith(color: Colors.grey,),
                       ),
                     ),
                   ),
-                ),
+                  // Search results count
+                  _buildSearchResultsCount(),
+                ],
               )
           ),
         ),
