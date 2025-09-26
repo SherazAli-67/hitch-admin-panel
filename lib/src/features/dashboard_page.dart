@@ -809,30 +809,60 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
     try {
       if (!_hasMoreLocation) return [];
 
-      // For location search using array-contains, we need to use a different approach
-      // since we can't easily paginate array-contains queries with startAfterDocument
-      Query locationQuery = _firestore
-          .collection('users')
-          .where('locationStringArray', arrayContains: queryLower)
-          .limit(_pageSize);
+      List<UserModel> results = [];
 
-      if (_lastLocationDoc != null) {
-        locationQuery = locationQuery.startAfterDocument(_lastLocationDoc!);
-      }
+      // Primary search: Use array-contains for users with locattionStringArray
+      try {
+        Query locationQuery = _firestore
+            .collection('users')
+            .where('locattionStringArray', arrayContains: queryLower)
+            .limit(_pageSize);
 
-      final QuerySnapshot locationSnapshot = await locationQuery.get();
-      
-      if (locationSnapshot.docs.isNotEmpty) {
-        _lastLocationDoc = locationSnapshot.docs.last;
-        _hasMoreLocation = locationSnapshot.docs.length == _pageSize;
+        if (_lastLocationDoc != null) {
+          locationQuery = locationQuery.startAfterDocument(_lastLocationDoc!);
+        }
+
+        final QuerySnapshot locationSnapshot = await locationQuery.get();
         
-        return locationSnapshot.docs
-            .map((doc) => UserModel.fromMap(doc.data() as Map<String, dynamic>))
-            .toList();
-      } else {
-        _hasMoreLocation = false;
-        return [];
+        if (locationSnapshot.docs.isNotEmpty) {
+          _lastLocationDoc = locationSnapshot.docs.last;
+          results.addAll(locationSnapshot.docs
+              .map((doc) => UserModel.fromMap(doc.data() as Map<String, dynamic>))
+              .toList());
+        }
+      } catch (e) {
+        debugPrint('Array location search error: $e');
       }
+
+      // Fallback search: For users with only locationString (no array)
+      // This helps find users who haven't been migrated yet
+      if (results.length < _pageSize ~/ 2) {
+        try {
+          final QuerySnapshot fallbackSnapshot = await _firestore
+              .collection('users')
+              .where('locationString', isGreaterThanOrEqualTo: queryLower)
+              .where('locationString', isLessThan: queryLower + '\uf8ff')
+              .where('locattionStringArray', isEqualTo: null)
+              .limit(_pageSize - results.length)
+              .get();
+
+          if (fallbackSnapshot.docs.isNotEmpty) {
+            final fallbackResults = fallbackSnapshot.docs
+                .map((doc) => UserModel.fromMap(doc.data() as Map<String, dynamic>))
+                .where((user) => !results.any((existing) => existing.userID == user.userID))
+                .toList();
+            
+            results.addAll(fallbackResults);
+          }
+        } catch (e) {
+          debugPrint('Fallback location search error: $e');
+        }
+      }
+
+      // Update pagination state
+      _hasMoreLocation = results.length == _pageSize;
+      
+      return results;
     } catch (e) {
       debugPrint('Location search error: $e');
       _hasMoreLocation = false;
