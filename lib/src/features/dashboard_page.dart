@@ -860,60 +860,30 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
     try {
       final String queryLower = query.toLowerCase();
       
-      // Build count queries for all search fields
-      List<Future<AggregateQuerySnapshot>> countFutures = [];
+      // Instead of summing separate counts (which includes duplicates),
+      // we'll perform actual searches and deduplicate to get accurate count
+      final List<Future<List<String>>> searchFutures = [
+        _getUniqueUserIdsFromUserNameSearch(query),
+        _getUniqueUserIdsFromBioSearch(queryLower),
+        _getUniqueUserIdsFromLocationSearch(queryLower),
+      ];
       
-      // UserName count query
-      Query userNameCountQuery = _firestore
-          .collection('users')
-          .where('userName', isGreaterThanOrEqualTo: query)
-          .where('userName', isLessThan: query + '\uf8ff');
+      final List<List<String>> searchResultsLists = await Future.wait(searchFutures);
       
-      // Apply player type filter if selected
-      if (_selectedPlayerType != null) {
-        String fieldName = _getPlayerTypeFieldName(_selectedPlayerType!);
-        userNameCountQuery = userNameCountQuery.where(fieldName, isEqualTo: true);
+      // Combine and deduplicate user IDs
+      Set<String> uniqueUserIds = {};
+      for (List<String> resultsList in searchResultsLists) {
+        uniqueUserIds.addAll(resultsList);
       }
       
-      countFutures.add(userNameCountQuery.count().get());
-      
-      // Bio count query
-      Query bioCountQuery = _firestore
-          .collection('users')
-          .where('bio', isGreaterThanOrEqualTo: queryLower)
-          .where('bio', isLessThan: queryLower + '\uf8ff');
-      
-      if (_selectedPlayerType != null) {
-        String fieldName = _getPlayerTypeFieldName(_selectedPlayerType!);
-        bioCountQuery = bioCountQuery.where(fieldName, isEqualTo: true);
-      }
-      
-      countFutures.add(bioCountQuery.count().get());
-      
-      // Location count query (array-contains)
-      Query locationCountQuery = _firestore
-          .collection('users')
-          .where('locationStringArray', arrayContains: queryLower);
-      
-      if (_selectedPlayerType != null) {
-        String fieldName = _getPlayerTypeFieldName(_selectedPlayerType!);
-        locationCountQuery = locationCountQuery.where(fieldName, isEqualTo: true);
-      }
-      
-      countFutures.add(locationCountQuery.count().get());
-      
-      // Execute all count queries in parallel
-      final List<AggregateQuerySnapshot> countResults = await Future.wait(countFutures);
-      
-      // Sum up counts but note: this gives total matches across all fields
-      // which may include duplicates, but provides a good approximation
-      int totalCount = 0;
-      for (var result in countResults) {
-        totalCount += result.count ?? 0;
+      // Apply player type filter by checking actual user documents
+      int filteredCount = uniqueUserIds.length;
+      if (_selectedPlayerType != null && uniqueUserIds.isNotEmpty) {
+        filteredCount = await _countUsersWithPlayerType(uniqueUserIds.toList(), _selectedPlayerType!);
       }
       
       setState(() {
-        _totalSearchCount = totalCount;
+        _totalSearchCount = filteredCount;
         _isCountLoading = false;
       });
       
@@ -923,6 +893,82 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
         _isCountLoading = false;
         _totalSearchCount = null;
       });
+    }
+  }
+  
+  Future<List<String>> _getUniqueUserIdsFromUserNameSearch(String query) async {
+    try {
+      const int maxCount = 1000; // Reasonable limit for counting
+      final QuerySnapshot snapshot = await _firestore
+          .collection('users')
+          .where('userName', isGreaterThanOrEqualTo: query)
+          .where('userName', isLessThan: query + '\uf8ff')
+          .limit(maxCount)
+          .get();
+      
+      return snapshot.docs.map((doc) => doc.id).toList();
+    } catch (e) {
+      debugPrint('Error in userName count search: $e');
+      return [];
+    }
+  }
+  
+  Future<List<String>> _getUniqueUserIdsFromBioSearch(String queryLower) async {
+    try {
+      const int maxCount = 1000;
+      final QuerySnapshot snapshot = await _firestore
+          .collection('users')
+          .where('bio', isGreaterThanOrEqualTo: queryLower)
+          .where('bio', isLessThan: queryLower + '\uf8ff')
+          .limit(maxCount)
+          .get();
+      
+      return snapshot.docs.map((doc) => doc.id).toList();
+    } catch (e) {
+      debugPrint('Error in bio count search: $e');
+      return [];
+    }
+  }
+  
+  Future<List<String>> _getUniqueUserIdsFromLocationSearch(String queryLower) async {
+    try {
+      const int maxCount = 1000;
+      final QuerySnapshot snapshot = await _firestore
+          .collection('users')
+          .where('locattionStringArray', arrayContains: queryLower)
+          .limit(maxCount)
+          .get();
+      
+      return snapshot.docs.map((doc) => doc.id).toList();
+    } catch (e) {
+      debugPrint('Error in location count search: $e');
+      return [];
+    }
+  }
+  
+  Future<int> _countUsersWithPlayerType(List<String> userIds, String playerType) async {
+    try {
+      final String fieldName = _getPlayerTypeFieldName(playerType);
+      int count = 0;
+      
+      // Process in batches due to Firestore 'in' query limit of 10
+      const int batchSize = 10;
+      for (int i = 0; i < userIds.length; i += batchSize) {
+        final batch = userIds.skip(i).take(batchSize).toList();
+        
+        final QuerySnapshot snapshot = await _firestore
+            .collection('users')
+            .where(FieldPath.documentId, whereIn: batch)
+            .where(fieldName, isEqualTo: true)
+            .get();
+        
+        count += snapshot.docs.length;
+      }
+      
+      return count;
+    } catch (e) {
+      debugPrint('Error filtering by player type: $e');
+      return userIds.length; // Return original count if filtering fails
     }
   }
 
