@@ -6,7 +6,6 @@ import 'package:hitch_tracker/src/providers/hitch_count_provider.dart';
 import 'package:hitch_tracker/src/res/app_colors.dart';
 import 'package:hitch_tracker/src/res/app_textstyles.dart';
 import 'package:hitch_tracker/src/res/string_constants.dart';
-import 'package:hitch_tracker/src/service/hitches_service.dart';
 import 'dart:async';
 
 import 'package:provider/provider.dart';

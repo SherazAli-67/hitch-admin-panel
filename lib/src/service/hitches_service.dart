@@ -76,10 +76,10 @@ class HitchesService {
           debugPrint('Geocoding API returned no results or status not OK. Status: ${data['status']}');
         }
       } else {
-        print('Failed to fetch geocoding data. HTTP status: ${response.statusCode}');
+        debugPrint('Failed to fetch geocoding data. HTTP status: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error during geocoding: $e');
+      debugPrint('Error during geocoding: $e');
     }
 
     return address;
