@@ -197,33 +197,33 @@ class _AcceptedHitchRequestsPageState extends State<AcceptedHitchRequestsPage> w
         columns: [
           DataColumn(
             label: SizedBox(
-              width: 80,
-              child: Center(child: TableColumnWidget(title: 'Profile'))
+                width: 80,
+                child: Center(child: TableColumnWidget(title: 'Profile'))
             ),
           ),
           DataColumn(
             label: Expanded(
-              flex: 2,
-              child: TableColumnWidget(title: 'User Name')
+                flex: 2,
+                child: TableColumnWidget(title: 'User Name')
             ),
           ),
           DataColumn(
             label: Expanded(
-              flex: 3,
-              child: TableColumnWidget(title: 'Bio')
+                flex: 3,
+                child: TableColumnWidget(title: 'Bio')
             ),
           ),
           DataColumn(
             label: SizedBox(
-              width: 120,
-              child: TableColumnWidget(title: 'Accepted Hitches')
+                width: 120,
+                child: TableColumnWidget(title: 'Accepted Hitches')
             ),
             numeric: true,
           ),
           DataColumn(
             label: Expanded(
-              flex: 2,
-              child: TableColumnWidget(title: 'User ID')
+                flex: 2,
+                child: TableColumnWidget(title: 'User ID')
             ),
           ),
         ],
@@ -318,7 +318,7 @@ class _AcceptedHitchRequestsPageState extends State<AcceptedHitchRequestsPage> w
           ),
           const SizedBox(height: 8),
           Text(
-            _searchQuery.isEmpty 
+            _searchQuery.isEmpty
                 ? 'Users who accept hitches will appear here'
                 : 'Try a different search term',
             style: AppTextStyles.smallTextStyle.copyWith(color: Colors.grey[500]),
@@ -369,8 +369,8 @@ class _AcceptedHitchRequestsPageState extends State<AcceptedHitchRequestsPage> w
     final query = _searchQuery.toLowerCase();
     final filtered = _users.where((user) {
       return user.userName.toLowerCase().contains(query) ||
-             user.bio.toLowerCase().contains(query) ||
-             user.userID.toLowerCase().contains(query);
+          user.bio.toLowerCase().contains(query) ||
+          user.userID.toLowerCase().contains(query);
     }).toList();
 
     setState(() {
