@@ -73,22 +73,22 @@ class _RequestedHitchesPageState extends State<RequestedHitchesPage> with Automa
         SliverPadding(
           padding: const EdgeInsets.only(bottom: 20, top: 20,),
           sliver: SliverToBoxAdapter(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  spacing: 20,
-                  children: [
-                    Text("Hitch Requests", style: AppTextStyles.largeTextStyle,),
-                    Consumer<HitchCountProvider>(builder: (_, provider, _){
-                      return Text(provider.totalUsers == 1 ? "" : '${provider.totalHitchRequests}', style: AppTextStyles.headingTextStyle.copyWith(color: AppColors.primaryColor),);
-                    }),
-                  ],
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    spacing: 20,
+                    children: [
+                      Text("Hitch Requests", style: AppTextStyles.largeTextStyle,),
+                      Consumer<HitchCountProvider>(builder: (_, provider, _){
+                        return Text(provider.totalUsers == 1 ? "" : '${provider.totalHitchRequests}', style: AppTextStyles.headingTextStyle.copyWith(color: AppColors.primaryColor),);
+                      }),
+                    ],
+                  ),
 
-                Text("Manage Hitch requests", style: AppTextStyles.smallTextStyle,)
-              ],
-            )
+                  Text("Manage Hitch requests", style: AppTextStyles.smallTextStyle,)
+                ],
+              )
           ),
         ),
         SliverPadding(
@@ -214,8 +214,8 @@ class _RequestedHitchesPageState extends State<RequestedHitchesPage> with Automa
           DataColumn(
             headingRowAlignment: MainAxisAlignment.center,
             label: SizedBox(
-              width: 80,
-              child: Center(child: TableColumnWidget(title: 'Profile'))
+                width: 80,
+                child: Center(child: TableColumnWidget(title: 'Profile'))
             ),
           ),
           DataColumn(
@@ -226,14 +226,14 @@ class _RequestedHitchesPageState extends State<RequestedHitchesPage> with Automa
           ),
           DataColumn(
             label: Expanded(
-              flex: 3,
-              child: TableColumnWidget(title: 'Bio')
+                flex: 3,
+                child: TableColumnWidget(title: 'Bio')
             ),
           ),
           DataColumn(
             label: SizedBox(
-              width: 100,
-              child: TableColumnWidget(title: 'Hitches Count')
+                width: 100,
+                child: TableColumnWidget(title: 'Hitches Count')
             ),
             numeric: true,
           ),
@@ -262,12 +262,12 @@ class _RequestedHitchesPageState extends State<RequestedHitchesPage> with Automa
                   : null,
               child: user.profilePicture.isEmpty
                   ? Text(
-                      user.userName.isNotEmpty ? user.userName[0].toUpperCase() : '?',
-                      style: AppTextStyles.regularTextStyle.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.primaryColor,
-                      ),
-                    )
+                user.userName.isNotEmpty ? user.userName[0].toUpperCase() : '?',
+                style: AppTextStyles.regularTextStyle.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primaryColor,
+                ),
+              )
                   : null,
             ),
           ),
@@ -563,7 +563,7 @@ class _RequestedHitchesPageState extends State<RequestedHitchesPage> with Automa
 
   Future<void> _getSearchResultsCount(String query) async {
     if (_isCountLoading) return;
-    
+
     setState(() {
       _isCountLoading = true;
     });
@@ -574,14 +574,14 @@ class _RequestedHitchesPageState extends State<RequestedHitchesPage> with Automa
           .collection('hitches_tracker').doc('hitch_tracker_doc').collection('users')
           .where('userName', isGreaterThanOrEqualTo: query)
           .where('userName', isLessThan: query + '\uf8ff');
-      
+
       final AggregateQuerySnapshot countResult = await countQuery.count().get();
-      
+
       setState(() {
         _totalSearchCount = countResult.count ?? 0;
         _isCountLoading = false;
       });
-      
+
     } catch (e) {
       debugPrint('Error getting search count: $e');
       setState(() {
