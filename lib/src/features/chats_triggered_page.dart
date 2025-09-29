@@ -22,13 +22,13 @@ class _ChatsTriggeredPageState extends State<ChatsTriggeredPage> with AutomaticK
   @override
   bool get wantKeepAlive => true;
 
-  // String? _selectedTriggerType;
+  String? _selectedTriggerType;
 
   // List of items in our dropdown menu
-  // final _triggerTypes = [
-  //   triggerTypeEmail,
-  //   triggerTypeMessage,
-  // ];
+  final _triggerTypes = [
+    triggerTypeEmail,
+    triggerTypeMessage,
+  ];
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final TextEditingController _searchController = TextEditingController();
@@ -379,6 +379,52 @@ class _ChatsTriggeredPageState extends State<ChatsTriggeredPage> with AutomaticK
     );
   }
 
+  TextField _buildSearchTextField() {
+    return TextField(
+      controller: _searchController,
+      decoration: InputDecoration(
+        enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: Colors.transparent)
+        ),
+        focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: Colors.transparent)
+        ),
+        fillColor: AppColors.textFieldFillColor,
+        filled: true,
+        hintText: "Search users by name or bio (Firebase search)",
+        hintStyle: AppTextStyles.smallTextStyle.copyWith(color: Colors.grey),
+        prefixIcon: const Icon(Icons.search_sharp, color: Colors.grey),
+        suffixIcon: _searchQuery.isNotEmpty
+            ? IconButton(
+          icon: const Icon(Icons.clear, color: Colors.grey),
+          onPressed: () {
+            _searchController.clear();
+          },
+        )
+            : null,
+      ),
+    );
+  }
+
+  Widget _buildInfoItemWidget({required String title, required int value}) {
+    return Container(
+      decoration: BoxDecoration(
+          color: AppColors.textFieldFillColor,
+          borderRadius: BorderRadius.circular(10)
+      ),
+      padding: const EdgeInsets.all(15),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: 15,
+        children: [
+          Text(title, style: AppTextStyles.regularTextStyle),
+          Text(value == 1 ? '•••••' :"$value", style: AppTextStyles.headingTextStyle)
+        ],
+      ),
+    );
+  }
 
   void _onScroll() {
     if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent * 0.8) {
