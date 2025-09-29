@@ -36,7 +36,7 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  
+
   List<UserModel> _users = [];
   List<UserModel> _searchResults = [];
   bool _isLoading = false;
@@ -44,7 +44,7 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
   bool _hasMoreData = true;
   bool _hasMoreSearchResults = true;
   DocumentSnapshot? _lastDocument;
-  
+
   // Separate pagination tracking for each search field
   DocumentSnapshot? _lastUserNameDoc;
   DocumentSnapshot? _lastBioDoc;
@@ -52,15 +52,15 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
   bool _hasMoreUserName = true;
   bool _hasMoreBio = true;
   bool _hasMoreLocation = true;
-  
+
   Timer? _debounceTimer;
   String _searchQuery = '';
   bool _isInSearchMode = false;
-  
+
   // Search results count
   int? _totalSearchCount;
   bool _isCountLoading = false;
-  
+
   static const int _pageSize = 20;
 
   @override
@@ -90,122 +90,122 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
         SliverPadding(
           padding: const EdgeInsets.only(top: 10, bottom: 10, right: 100),
           sliver: SliverToBoxAdapter(
-            child: Column(
-              spacing: 20,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      spacing: 20,
-                      // mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        GestureDetector(
-                            onTap:()async{
-                              // await FirebaseFirestore.instance.collection('location_trigger').add({'lowerCaseTest' :  'test'});
-                              // debugPrint("Record added");
-                            },
-                            child: Text("All Users", style: AppTextStyles.largeTextStyle,)),
-                        Consumer<HitchCountProvider>(builder: (_, provider, _){
-                          return Text(provider.totalUsers == 1 ? "" : '${provider.totalUsers}', style: AppTextStyles.headingTextStyle.copyWith(color: AppColors.primaryColor),);
-                        }),
+              child: Column(
+                spacing: 20,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        spacing: 20,
+                        // mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          GestureDetector(
+                              onTap:()async{
+                                // await FirebaseFirestore.instance.collection('location_trigger').add({'lowerCaseTest' :  'test'});
+                                // debugPrint("Record added");
+                              },
+                              child: Text("All Users", style: AppTextStyles.largeTextStyle,)),
+                          Consumer<HitchCountProvider>(builder: (_, provider, _){
+                            return Text(provider.totalUsers == 1 ? "" : '${provider.totalUsers}', style: AppTextStyles.headingTextStyle.copyWith(color: AppColors.primaryColor),);
+                          }),
 
-                      ],
-                    ),
+                        ],
+                      ),
 
-                    Text('A comprehensive list of all users on the Hitch Platform', style: AppTextStyles.smallTextStyle,)
-                  ],
-                ),
-                Card(
-                  color: Colors.white,
-                  elevation: 0,
-                  margin: EdgeInsets.only(right: 10),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.zero
+                      Text('A comprehensive list of all users on the Hitch Platform', style: AppTextStyles.smallTextStyle,)
+                    ],
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(15.0),
-                    child: Row(
-                      spacing: 20,
-                      children: [
-                        Expanded(child: SizedBox(
-                          height: 40,
-                          child: TextField(
-                            controller: _searchController,
-                            style: AppTextStyles.smallTextStyle,
-                            decoration: InputDecoration(
-                              enabledBorder: OutlineInputBorder(
-                                borderSide: BorderSide(color: AppColors.textFieldFillColor)
-                              ),
+                  Card(
+                    color: Colors.white,
+                    elevation: 0,
+                    margin: EdgeInsets.only(right: 10),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.zero
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(15.0),
+                      child: Row(
+                        spacing: 20,
+                        children: [
+                          Expanded(child: SizedBox(
+                            height: 40,
+                            child: TextField(
+                              controller: _searchController,
+                              style: AppTextStyles.smallTextStyle,
+                              decoration: InputDecoration(
+                                enabledBorder: OutlineInputBorder(
+                                    borderSide: BorderSide(color: AppColors.textFieldFillColor)
+                                ),
                                 focusedBorder: OutlineInputBorder(
                                     borderSide: BorderSide(color: AppColors.textFieldFillColor)
                                 ),
-                              hintText: 'Search by name, location, bio',
-                              hintStyle: AppTextStyles.smallTextStyle.copyWith(color: Colors.grey,),
+                                hintText: 'Search by name, location, bio',
+                                hintStyle: AppTextStyles.smallTextStyle.copyWith(color: Colors.grey,),
+                              ),
                             ),
-                          ),
-                        )),
+                          )),
 
-                        Expanded(child: FormField<String>(
-                          builder: (FormFieldState<String> state) {
-                            return InputDecorator(
-                              decoration: InputDecoration(
-                                enabledBorder: OutlineInputBorder(
-                                  borderSide: BorderSide(color: AppColors.textFieldFillColor)),
-                                labelStyle: AppTextStyles.smallTextStyle,
-                                hintStyle: AppTextStyles.smallTextStyle.copyWith(color: Colors.grey),
-                                contentPadding: EdgeInsets.symmetric(horizontal: 10),
-                                errorStyle: AppTextStyles.regularTextStyle.copyWith(color: Colors.red),
-                                // hintText: 'Please select expense',
-                              ),
-                              isEmpty: _selectedPlayerType == null,
-                              child: DropdownButtonHideUnderline(
-                                child: DropdownButton<String>(
-                                  value: _selectedPlayerType,
-                                  hint: Text('Filter by sport', style: AppTextStyles.smallTextStyle,),
-                                  isDense: true,
-                                  elevation: 0,
-                                  dropdownColor: Colors.white,
-                                  onChanged: (String? newValue) {
-                                    setState(() {
-                                      _selectedPlayerType = newValue;
-                                      // Reset data when filter changes
-                                      _users.clear();
-                                      _searchResults.clear();
-                                      _lastDocument = null;
-                                      _resetSearchPagination();
-                                      _hasMoreData = true;
-                                      _hasMoreSearchResults = true;
-                                      _totalSearchCount = null;
-                                    });
-                                    
-                                    // Reload data with new filter
-                                    if (_isInSearchMode) {
-                                      _performFirebaseSearch();
-                                    } else {
-                                      _loadUsers();
-                                    }
-                                  },
-                                  items: _playerTypes.map((String value) {
-                                    return DropdownMenuItem<String>(
-                                      value: value,
-                                      child: Text(value)
-                                    );
-                                  }).toList(),
+                          Expanded(child: FormField<String>(
+                            builder: (FormFieldState<String> state) {
+                              return InputDecorator(
+                                decoration: InputDecoration(
+                                  enabledBorder: OutlineInputBorder(
+                                      borderSide: BorderSide(color: AppColors.textFieldFillColor)),
+                                  labelStyle: AppTextStyles.smallTextStyle,
+                                  hintStyle: AppTextStyles.smallTextStyle.copyWith(color: Colors.grey),
+                                  contentPadding: EdgeInsets.symmetric(horizontal: 10),
+                                  errorStyle: AppTextStyles.regularTextStyle.copyWith(color: Colors.red),
+                                  // hintText: 'Please select expense',
                                 ),
-                              ),
-                            );
-                          },
-                        ),)
-                      ],
+                                isEmpty: _selectedPlayerType == null,
+                                child: DropdownButtonHideUnderline(
+                                  child: DropdownButton<String>(
+                                    value: _selectedPlayerType,
+                                    hint: Text('Filter by sport', style: AppTextStyles.smallTextStyle,),
+                                    isDense: true,
+                                    elevation: 0,
+                                    dropdownColor: Colors.white,
+                                    onChanged: (String? newValue) {
+                                      setState(() {
+                                        _selectedPlayerType = newValue;
+                                        // Reset data when filter changes
+                                        _users.clear();
+                                        _searchResults.clear();
+                                        _lastDocument = null;
+                                        _resetSearchPagination();
+                                        _hasMoreData = true;
+                                        _hasMoreSearchResults = true;
+                                        _totalSearchCount = null;
+                                      });
+
+                                      // Reload data with new filter
+                                      if (_isInSearchMode) {
+                                        _performFirebaseSearch();
+                                      } else {
+                                        _loadUsers();
+                                      }
+                                    },
+                                    items: _playerTypes.map((String value) {
+                                      return DropdownMenuItem<String>(
+                                          value: value,
+                                          child: Text(value)
+                                      );
+                                    }).toList(),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),)
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                // Search results count
-                _buildSearchResultsCount(),
-              ],
-            )
+                  // Search results count
+                  _buildSearchResultsCount(),
+                ],
+              )
           ),
         ),
         // Users list
@@ -224,7 +224,7 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
         child: Card(
           elevation: 1,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(5)
+              borderRadius: BorderRadius.circular(5)
           ),
           color: Colors.white,
           child: SizedBox(
@@ -239,7 +239,7 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
       child: Card(
         elevation: 1,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(5)
+            borderRadius: BorderRadius.circular(5)
         ),
         margin: EdgeInsets.only(right: 100),
         color: Colors.white,
@@ -334,7 +334,7 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
         )
       ],
     );
-  /*  return ElevatedButton(
+    /*  return ElevatedButton(
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -685,11 +685,11 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
       ];
 
       final List<List<UserModel>> searchResultsLists = await Future.wait(searchFutures);
-      
+
       // Combine and deduplicate results
       List<UserModel> combinedResults = [];
       Set<String> seenUserIds = {};
-      
+
       for (List<UserModel> resultsList in searchResultsLists) {
         for (UserModel user in resultsList) {
           if (!seenUserIds.contains(user.userID)) {
@@ -750,11 +750,11 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
       }
 
       final QuerySnapshot snapshot = await searchQuery.get();
-      
+
       if (snapshot.docs.isNotEmpty) {
         _lastUserNameDoc = snapshot.docs.last;
         _hasMoreUserName = snapshot.docs.length == _pageSize;
-        
+
         return snapshot.docs
             .map((doc) => UserModel.fromMap(doc.data() as Map<String, dynamic>))
             .toList();
@@ -785,11 +785,11 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
       }
 
       final QuerySnapshot bioSnapshot = await bioQuery.get();
-      
+
       if (bioSnapshot.docs.isNotEmpty) {
         _lastBioDoc = bioSnapshot.docs.last;
         _hasMoreBio = bioSnapshot.docs.length == _pageSize;
-        
+
         return bioSnapshot.docs
             .map((doc) => UserModel.fromMap(doc.data() as Map<String, dynamic>))
             .toList();
@@ -808,60 +808,30 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
     try {
       if (!_hasMoreLocation) return [];
 
-      List<UserModel> results = [];
+      // For location search using array-contains, we need to use a different approach
+      // since we can't easily paginate array-contains queries with startAfterDocument
+      Query locationQuery = _firestore
+          .collection('users')
+          .where('locationStringArray', arrayContains: queryLower)
+          .limit(_pageSize);
 
-      // Primary search: Use array-contains for users with locattionStringArray
-      try {
-        Query locationQuery = _firestore
-            .collection('users')
-            .where('locattionStringArray', arrayContains: queryLower)
-            .limit(_pageSize);
-
-        if (_lastLocationDoc != null) {
-          locationQuery = locationQuery.startAfterDocument(_lastLocationDoc!);
-        }
-
-        final QuerySnapshot locationSnapshot = await locationQuery.get();
-        
-        if (locationSnapshot.docs.isNotEmpty) {
-          _lastLocationDoc = locationSnapshot.docs.last;
-          results.addAll(locationSnapshot.docs
-              .map((doc) => UserModel.fromMap(doc.data() as Map<String, dynamic>))
-              .toList());
-        }
-      } catch (e) {
-        debugPrint('Array location search error: $e');
+      if (_lastLocationDoc != null) {
+        locationQuery = locationQuery.startAfterDocument(_lastLocationDoc!);
       }
 
-      // Fallback search: For users with only locationString (no array)
-      // This helps find users who haven't been migrated yet
-      if (results.length < _pageSize ~/ 2) {
-        try {
-          final QuerySnapshot fallbackSnapshot = await _firestore
-              .collection('users')
-              .where('locationString', isGreaterThanOrEqualTo: queryLower)
-              .where('locationString', isLessThan: queryLower + '\uf8ff')
-              .where('locattionStringArray', isEqualTo: null)
-              .limit(_pageSize - results.length)
-              .get();
+      final QuerySnapshot locationSnapshot = await locationQuery.get();
 
-          if (fallbackSnapshot.docs.isNotEmpty) {
-            final fallbackResults = fallbackSnapshot.docs
-                .map((doc) => UserModel.fromMap(doc.data() as Map<String, dynamic>))
-                .where((user) => !results.any((existing) => existing.userID == user.userID))
-                .toList();
-            
-            results.addAll(fallbackResults);
-          }
-        } catch (e) {
-          debugPrint('Fallback location search error: $e');
-        }
+      if (locationSnapshot.docs.isNotEmpty) {
+        _lastLocationDoc = locationSnapshot.docs.last;
+        _hasMoreLocation = locationSnapshot.docs.length == _pageSize;
+
+        return locationSnapshot.docs
+            .map((doc) => UserModel.fromMap(doc.data() as Map<String, dynamic>))
+            .toList();
+      } else {
+        _hasMoreLocation = false;
+        return [];
       }
-
-      // Update pagination state
-      _hasMoreLocation = results.length == _pageSize;
-      
-      return results;
     } catch (e) {
       debugPrint('Location search error: $e');
       _hasMoreLocation = false;
@@ -871,51 +841,81 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
 
   Future<void> _loadMoreSearchResults() async {
     if (_isSearching || !_hasMoreSearchResults) return;
-    
+
     setState(() {
       _isSearching = true;
     });
-    
+
     await _searchInFirebase(_searchQuery);
   }
 
   Future<void> _getSearchResultsCount(String query) async {
     if (_isCountLoading) return;
-    
+
     setState(() {
       _isCountLoading = true;
     });
 
     try {
       final String queryLower = query.toLowerCase();
-      
-      // Instead of summing separate counts (which includes duplicates),
-      // we'll perform actual searches and deduplicate to get accurate count
-      final List<Future<List<String>>> searchFutures = [
-        _getUniqueUserIdsFromUserNameSearch(query),
-        _getUniqueUserIdsFromBioSearch(queryLower),
-        _getUniqueUserIdsFromLocationSearch(queryLower),
-      ];
-      
-      final List<List<String>> searchResultsLists = await Future.wait(searchFutures);
-      
-      // Combine and deduplicate user IDs
-      Set<String> uniqueUserIds = {};
-      for (List<String> resultsList in searchResultsLists) {
-        uniqueUserIds.addAll(resultsList);
+
+      // Build count queries for all search fields
+      List<Future<AggregateQuerySnapshot>> countFutures = [];
+
+      // UserName count query
+      Query userNameCountQuery = _firestore
+          .collection('users')
+          .where('userName', isGreaterThanOrEqualTo: query)
+          .where('userName', isLessThan: query + '\uf8ff');
+
+      // Apply player type filter if selected
+      if (_selectedPlayerType != null) {
+        String fieldName = _getPlayerTypeFieldName(_selectedPlayerType!);
+        userNameCountQuery = userNameCountQuery.where(fieldName, isEqualTo: true);
       }
-      
-      // Apply player type filter by checking actual user documents
-      int filteredCount = uniqueUserIds.length;
-      if (_selectedPlayerType != null && uniqueUserIds.isNotEmpty) {
-        filteredCount = await _countUsersWithPlayerType(uniqueUserIds.toList(), _selectedPlayerType!);
+
+      countFutures.add(userNameCountQuery.count().get());
+
+      // Bio count query
+      Query bioCountQuery = _firestore
+          .collection('users')
+          .where('bio', isGreaterThanOrEqualTo: queryLower)
+          .where('bio', isLessThan: queryLower + '\uf8ff');
+
+      if (_selectedPlayerType != null) {
+        String fieldName = _getPlayerTypeFieldName(_selectedPlayerType!);
+        bioCountQuery = bioCountQuery.where(fieldName, isEqualTo: true);
       }
-      
+
+      countFutures.add(bioCountQuery.count().get());
+
+      // Location count query (array-contains)
+      Query locationCountQuery = _firestore
+          .collection('users')
+          .where('locationStringArray', arrayContains: queryLower);
+
+      if (_selectedPlayerType != null) {
+        String fieldName = _getPlayerTypeFieldName(_selectedPlayerType!);
+        locationCountQuery = locationCountQuery.where(fieldName, isEqualTo: true);
+      }
+
+      countFutures.add(locationCountQuery.count().get());
+
+      // Execute all count queries in parallel
+      final List<AggregateQuerySnapshot> countResults = await Future.wait(countFutures);
+
+      // Sum up counts but note: this gives total matches across all fields
+      // which may include duplicates, but provides a good approximation
+      int totalCount = 0;
+      for (var result in countResults) {
+        totalCount += result.count ?? 0;
+      }
+
       setState(() {
-        _totalSearchCount = filteredCount;
+        _totalSearchCount = totalCount;
         _isCountLoading = false;
       });
-      
+
     } catch (e) {
       debugPrint('Error getting search count: $e');
       setState(() {
@@ -924,84 +924,8 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
       });
     }
   }
-  
-  Future<List<String>> _getUniqueUserIdsFromUserNameSearch(String query) async {
-    try {
-      const int maxCount = 1000; // Reasonable limit for counting
-      final QuerySnapshot snapshot = await _firestore
-          .collection('users')
-          .where('userName', isGreaterThanOrEqualTo: query)
-          .where('userName', isLessThan: query + '\uf8ff')
-          .limit(maxCount)
-          .get();
-      
-      return snapshot.docs.map((doc) => doc.id).toList();
-    } catch (e) {
-      debugPrint('Error in userName count search: $e');
-      return [];
-    }
-  }
-  
-  Future<List<String>> _getUniqueUserIdsFromBioSearch(String queryLower) async {
-    try {
-      const int maxCount = 1000;
-      final QuerySnapshot snapshot = await _firestore
-          .collection('users')
-          .where('bio', isGreaterThanOrEqualTo: queryLower)
-          .where('bio', isLessThan: queryLower + '\uf8ff')
-          .limit(maxCount)
-          .get();
-      
-      return snapshot.docs.map((doc) => doc.id).toList();
-    } catch (e) {
-      debugPrint('Error in bio count search: $e');
-      return [];
-    }
-  }
-  
-  Future<List<String>> _getUniqueUserIdsFromLocationSearch(String queryLower) async {
-    try {
-      const int maxCount = 1000;
-      final QuerySnapshot snapshot = await _firestore
-          .collection('users')
-          .where('locattionStringArray', arrayContains: queryLower)
-          .limit(maxCount)
-          .get();
-      
-      return snapshot.docs.map((doc) => doc.id).toList();
-    } catch (e) {
-      debugPrint('Error in location count search: $e');
-      return [];
-    }
-  }
-  
-  Future<int> _countUsersWithPlayerType(List<String> userIds, String playerType) async {
-    try {
-      final String fieldName = _getPlayerTypeFieldName(playerType);
-      int count = 0;
-      
-      // Process in batches due to Firestore 'in' query limit of 10
-      const int batchSize = 10;
-      for (int i = 0; i < userIds.length; i += batchSize) {
-        final batch = userIds.skip(i).take(batchSize).toList();
-        
-        final QuerySnapshot snapshot = await _firestore
-            .collection('users')
-            .where(FieldPath.documentId, whereIn: batch)
-            .where(fieldName, isEqualTo: true)
-            .get();
-        
-        count += snapshot.docs.length;
-      }
-      
-      return count;
-    } catch (e) {
-      debugPrint('Error filtering by player type: $e');
-      return userIds.length; // Return original count if filtering fails
-    }
-  }
 
- /* Future<void> _refreshUsers() async {
+/* Future<void> _refreshUsers() async {
     if (_isInSearchMode) {
       // Refresh search results
       setState(() {
