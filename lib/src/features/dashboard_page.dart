@@ -193,16 +193,22 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
                                         // Reset data when filter changes
                                         _users.clear();
                                         _searchResults.clear();
+                                        _countryFilteredUsers.clear();
                                         _lastDocument = null;
+                                        _lastCountryDoc = null;
                                         _resetSearchPagination();
                                         _hasMoreData = true;
                                         _hasMoreSearchResults = true;
+                                        _hasMoreCountryResults = true;
                                         _totalSearchCount = null;
+                                        _countryFilterCount = null;
                                       });
 
                                       // Reload data with new filter
                                       if (_isInSearchMode) {
                                         _performFirebaseSearch();
+                                      } else if (_isInCountryFilterMode) {
+                                        _loadUsersByCountry();
                                       } else {
                                         _loadUsers();
                                       }
