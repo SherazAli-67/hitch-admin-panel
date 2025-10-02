@@ -808,11 +808,12 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
     try {
       if (!_hasMoreLocation) return [];
 
-      // For location search using array-contains, we need to use a different approach
-      // since we can't easily paginate array-contains queries with startAfterDocument
+      // For location search using countryLowerCase field
       Query locationQuery = _firestore
           .collection('users')
-          .where('locationStringArray', arrayContains: queryLower)
+          .orderBy('countryLowerCase')
+          .where('countryLowerCase', isGreaterThanOrEqualTo: queryLower)
+          .where('countryLowerCase', isLessThan: queryLower + '\uf8ff')
           .limit(_pageSize);
 
       if (_lastLocationDoc != null) {
@@ -892,7 +893,8 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
       // Location count query (array-contains)
       Query locationCountQuery = _firestore
           .collection('users')
-          .where('locationStringArray', arrayContains: queryLower);
+          .where('countryLowerCase', isGreaterThanOrEqualTo: queryLower)
+          .where('countryLowerCase', isLessThan: queryLower + '\uf8ff');
 
       if (_selectedPlayerType != null) {
         String fieldName = _getPlayerTypeFieldName(_selectedPlayerType!);

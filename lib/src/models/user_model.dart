@@ -48,6 +48,10 @@ class UserModel {
   int? lastActive;
   String? locationString;
   List<String>? locattionStringArray;
+  final String country;
+  final String countryLowerCase;
+
+
   String get lastActiveTime {
     if (lastActive == null) {
       return '';
@@ -100,7 +104,10 @@ class UserModel {
       this.isReviewed = false,
         this.locationString,
       this.locattionStringArray,
-      this.lastActive});
+      this.lastActive,
+        required this.country,
+        required this.countryLowerCase
+      });
 
   Map<String, dynamic> toMap() {
     return {
@@ -149,7 +156,9 @@ class UserModel {
       isReviewedKey: isReviewed,
       'lastActive': lastActive,
       'locationString' : locationString,
-      'locattionStringArray': locattionStringArray
+      'locattionStringArray': locattionStringArray,
+      'country': country,
+      'countryLowerCase': countryLowerCase
     };
   }
 
@@ -225,6 +234,8 @@ class UserModel {
         isReviewed: map[isReviewedKey] ?? false,
         lastActive: map['lastActive'],
         locationString: map['locationString'],
+        country: map['country'] ?? '',
+        countryLowerCase: map['countryLowerCase'] ?? '',
         locattionStringArray: map['locattionStringArray'] != null 
             ? List<String>.from(map['locattionStringArray']) 
             : null,
