@@ -61,8 +61,26 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
   int? _totalSearchCount;
   bool _isCountLoading = false;
 
+  // Country filter state
+  bool _isInCountryFilterMode = false;
+  DocumentSnapshot? _lastCountryDoc;
+  bool _hasMoreCountryResults = true;
+  List<UserModel> _countryFilteredUsers = [];
+  int? _countryFilterCount;
+  bool _isLoadingCountryFilter = false;
+
   static const int _pageSize = 20;
 
+  final List<String> _countries = [
+    'United States',
+    'United Kingdom',
+    'Canada',
+    'Austrailia',
+    'France',
+    'India',
+    'China'
+  ];
+  String? _selectedCountry;
   @override
   void initState() {
     super.initState();
@@ -129,7 +147,9 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
                       child: Row(
                         spacing: 20,
                         children: [
-                          Expanded(child: SizedBox(
+                          Expanded(
+                              flex: 2,
+                              child: SizedBox(
                             height: 40,
                             child: TextField(
                               controller: _searchController,
@@ -197,6 +217,64 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
                                 ),
                               );
                             },
+                          ),),
+                          Expanded(child: FormField<String>(
+                            builder: (FormFieldState<String> state) {
+                              return InputDecorator(
+                                decoration: InputDecoration(
+                                  enabledBorder: OutlineInputBorder(
+                                      borderSide: BorderSide(color: AppColors.textFieldFillColor)),
+                                  labelStyle: AppTextStyles.smallTextStyle,
+                                  hintStyle: AppTextStyles.smallTextStyle.copyWith(color: Colors.grey),
+                                  contentPadding: EdgeInsets.symmetric(horizontal: 10),
+                                  errorStyle: AppTextStyles.regularTextStyle.copyWith(color: Colors.red),
+                                  // hintText: 'Please select expense',
+                                ),
+                                isEmpty: _selectedCountry == null,
+                                child: DropdownButtonHideUnderline(
+                                  child: DropdownButton<String>(
+                                    value: _selectedCountry,
+                                    hint: Text('Filter by county', style: AppTextStyles.smallTextStyle,),
+                                    isDense: true,
+                                    elevation: 0,
+                                    dropdownColor: Colors.white,
+                                    onChanged: (String? newValue) {
+                                      setState(() {
+                                        _selectedCountry = newValue;
+                                        _isInCountryFilterMode = newValue != null;
+                                        
+                                        // Reset all data when filter changes
+                                        _users.clear();
+                                        _searchResults.clear();
+                                        _countryFilteredUsers.clear();
+                                        _lastDocument = null;
+                                        _lastCountryDoc = null;
+                                        _resetSearchPagination();
+                                        _hasMoreData = true;
+                                        _hasMoreCountryResults = true;
+                                        _totalSearchCount = null;
+                                        _countryFilterCount = null;
+                                      });
+                                      
+                                      // Reload data based on mode
+                                      if (_isInSearchMode) {
+                                        _performFirebaseSearch();
+                                      } else if (_isInCountryFilterMode) {
+                                        _loadUsersByCountry();
+                                      } else {
+                                        _loadUsers();
+                                      }
+                                    },
+                                    items: _countries.map((String value) {
+                                      return DropdownMenuItem<String>(
+                                          value: value,
+                                          child: Text(value)
+                                      );
+                                    }).toList(),
+                                  ),
+                                ),
+                              );
+                            },
                           ),)
                         ],
                       ),
@@ -215,9 +293,18 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
   }
 
   Widget _buildUsersSliver() {
-    final currentUsers = _isInSearchMode ? _searchResults : _users;
-    final isCurrentlyLoading = _isInSearchMode ? _isSearching : _isLoading;
-    final hasMore = _isInSearchMode ? _hasMoreSearchResults : _hasMoreData;
+    // Determine which user list to display based on active mode
+    final currentUsers = _isInSearchMode 
+        ? _searchResults 
+        : (_isInCountryFilterMode ? _countryFilteredUsers : _users);
+    
+    final isCurrentlyLoading = _isInSearchMode 
+        ? _isSearching 
+        : (_isInCountryFilterMode ? _isLoadingCountryFilter : _isLoading);
+    
+    final hasMore = _isInSearchMode 
+        ? _hasMoreSearchResults 
+        : (_isInCountryFilterMode ? _hasMoreCountryResults : _hasMoreData);
 
     if (currentUsers.isEmpty && !isCurrentlyLoading) {
       return SliverToBoxAdapter(
@@ -491,6 +578,45 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
           ),
         );
       }
+    } else if (_isInCountryFilterMode) {
+      if (_isCountLoading) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 12,
+                height: 12,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryColor),
+                ),
+              ),
+              SizedBox(width: 8),
+              Text(
+                "Counting results...",
+                style: AppTextStyles.smallTextStyle.copyWith(
+                  color: Colors.grey[600],
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+      if (_countryFilterCount != null) {
+        String filterText = _selectedPlayerType != null ? " with ${_selectedPlayerType!} filter" : "";
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+          child: Text(
+            "Found $_countryFilterCount total result${_countryFilterCount == 1 ? '' : 's'} for '$_selectedCountry'$filterText",
+            style: AppTextStyles.smallTextStyle.copyWith(
+              color: AppColors.primaryColor,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        );
+      }
     } else if (!_isInSearchMode && _users.isNotEmpty) {
       String filterText = _selectedPlayerType != null ? " (${_selectedPlayerType!} filter)" : "";
       return Padding(
@@ -555,6 +681,10 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
       if (_isInSearchMode) {
         if (!_isSearching && _hasMoreSearchResults) {
           _loadMoreSearchResults();
+        }
+      } else if (_isInCountryFilterMode) {
+        if (!_isLoadingCountryFilter && _hasMoreCountryResults) {
+          _loadMoreCountryUsers();
         }
       } else {
         if (!_isLoading && _hasMoreData) {
@@ -631,6 +761,111 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
 
   Future<void> _loadMoreUsers() async {
     await _loadUsers();
+  }
+
+  Future<void> _loadUsersByCountry() async {
+    if (_isLoadingCountryFilter || _selectedCountry == null) return;
+
+    setState(() {
+      _isLoadingCountryFilter = true;
+    });
+
+    // Start count query in parallel
+    _getCountryFilterCount();
+
+    try {
+      final String countryLower = _selectedCountry!.toLowerCase();
+
+      Query countryQuery = _firestore
+          .collection('users')
+          .orderBy('countryLowerCase')
+          .where('countryLowerCase', isGreaterThanOrEqualTo: countryLower)
+          .where('countryLowerCase', isLessThan: countryLower + '\uf8ff')
+          .limit(_pageSize);
+
+      // Apply player type filter if selected
+      if (_selectedPlayerType != null) {
+        String fieldName = _getPlayerTypeFieldName(_selectedPlayerType!);
+        countryQuery = countryQuery.where(fieldName, isEqualTo: true);
+      }
+
+      if (_lastCountryDoc != null) {
+        countryQuery = countryQuery.startAfterDocument(_lastCountryDoc!);
+      }
+
+      final QuerySnapshot snapshot = await countryQuery.get();
+      
+      if (snapshot.docs.isNotEmpty) {
+        final List<UserModel> newUsers = snapshot.docs
+            .map((doc) => UserModel.fromMap(doc.data() as Map<String, dynamic>))
+            .toList();
+
+        setState(() {
+          if (_lastCountryDoc == null) {
+            _countryFilteredUsers = newUsers;
+          } else {
+            _countryFilteredUsers.addAll(newUsers);
+          }
+          _lastCountryDoc = snapshot.docs.last;
+          _hasMoreCountryResults = snapshot.docs.length == _pageSize;
+        });
+      } else {
+        setState(() {
+          _hasMoreCountryResults = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading users by country: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading users: $e')),
+        );
+      }
+    } finally {
+      setState(() {
+        _isLoadingCountryFilter = false;
+      });
+    }
+  }
+
+  Future<void> _loadMoreCountryUsers() async {
+    await _loadUsersByCountry();
+  }
+
+  Future<void> _getCountryFilterCount() async {
+    if (_isCountLoading || _selectedCountry == null) return;
+
+    setState(() {
+      _isCountLoading = true;
+    });
+
+    try {
+      final String countryLower = _selectedCountry!.toLowerCase();
+
+      Query countQuery = _firestore
+          .collection('users')
+          .where('countryLowerCase', isGreaterThanOrEqualTo: countryLower)
+          .where('countryLowerCase', isLessThan: countryLower + '\uf8ff');
+
+      // Apply player type filter if selected
+      if (_selectedPlayerType != null) {
+        String fieldName = _getPlayerTypeFieldName(_selectedPlayerType!);
+        countQuery = countQuery.where(fieldName, isEqualTo: true);
+      }
+
+      final AggregateQuerySnapshot countSnapshot = await countQuery.count().get();
+      
+      setState(() {
+        _countryFilterCount = countSnapshot.count;
+        _isCountLoading = false;
+      });
+    } catch (e) {
+      debugPrint('Error getting country filter count: $e');
+      setState(() {
+        _isCountLoading = false;
+        _countryFilterCount = null;
+      });
+    }
   }
 
   void _resetSearchPagination() {
