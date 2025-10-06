@@ -50,6 +50,9 @@ class UserModel {
   List<String>? locattionStringArray;
   final String country;
   final String countryLowerCase;
+  final String? state;
+  final String? stateLower;
+  final String? stateShortName;
 
 
   String get lastActiveTime {
@@ -106,7 +109,10 @@ class UserModel {
       this.locattionStringArray,
       this.lastActive,
         required this.country,
-        required this.countryLowerCase
+        required this.countryLowerCase,
+        this.state,
+        this.stateLower,
+        this.stateShortName
       });
 
   Map<String, dynamic> toMap() {
@@ -158,7 +164,10 @@ class UserModel {
       'locationString' : locationString,
       'locattionStringArray': locattionStringArray,
       'country': country,
-      'countryLowerCase': countryLowerCase
+      'countryLowerCase': countryLowerCase,
+      'state': state,
+      'stateLower': stateLower,
+      'stateShortName': stateShortName
     };
   }
 
@@ -236,6 +245,9 @@ class UserModel {
         locationString: map['locationString'],
         country: map['country'] ?? '',
         countryLowerCase: map['countryLowerCase'] ?? '',
+        state: map['state'],
+        stateLower: map['stateLower'],
+        stateShortName: map['stateShortName'],
         locattionStringArray: map['locattionStringArray'] != null 
             ? List<String>.from(map['locattionStringArray']) 
             : null,

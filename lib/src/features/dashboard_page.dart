@@ -49,9 +49,11 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
   DocumentSnapshot? _lastUserNameDoc;
   DocumentSnapshot? _lastBioDoc;
   DocumentSnapshot? _lastLocationDoc;
+  DocumentSnapshot? _lastStateDoc;
   bool _hasMoreUserName = true;
   bool _hasMoreBio = true;
   bool _hasMoreLocation = true;
+  bool _hasMoreState = true;
 
   Timer? _debounceTimer;
   String _searchQuery = '';
@@ -80,7 +82,9 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
     'India',
     'China'
   ];
+
   String? _selectedCountry;
+  bool _filterByState = false;
   @override
   void initState() {
     super.initState();
@@ -144,144 +148,168 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
                     ),
                     child: Padding(
                       padding: const EdgeInsets.all(15.0),
-                      child: Row(
-                        spacing: 20,
+                      child: Column(
+                        spacing: 10,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                              flex: 2,
-                              child: SizedBox(
-                            height: 40,
-                            child: TextField(
-                              controller: _searchController,
-                              style: AppTextStyles.smallTextStyle,
-                              decoration: InputDecoration(
-                                enabledBorder: OutlineInputBorder(
-                                    borderSide: BorderSide(color: AppColors.textFieldFillColor)
+                          Row(
+                            spacing: 20,
+                            children: [
+                              Expanded(
+                                  flex: 2,
+                                  child: SizedBox(
+                                height: 40,
+                                child: TextField(
+                                  controller: _searchController,
+                                  style: AppTextStyles.smallTextStyle,
+                                  decoration: InputDecoration(
+                                    enabledBorder: OutlineInputBorder(
+                                        borderSide: BorderSide(color: AppColors.textFieldFillColor)
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                        borderSide: BorderSide(color: AppColors.textFieldFillColor)
+                                    ),
+                                    hintText: 'Search by name, location, bio',
+                                    hintStyle: AppTextStyles.smallTextStyle.copyWith(color: Colors.grey,),
+                                  ),
                                 ),
-                                focusedBorder: OutlineInputBorder(
-                                    borderSide: BorderSide(color: AppColors.textFieldFillColor)
-                                ),
-                                hintText: 'Search by name, location, bio',
-                                hintStyle: AppTextStyles.smallTextStyle.copyWith(color: Colors.grey,),
+                              )),
+
+                              Expanded(child: FormField<String>(
+                                builder: (FormFieldState<String> state) {
+                                  return InputDecorator(
+                                    decoration: InputDecoration(
+                                      enabledBorder: OutlineInputBorder(
+                                          borderSide: BorderSide(color: AppColors.textFieldFillColor)),
+                                      labelStyle: AppTextStyles.smallTextStyle,
+                                      hintStyle: AppTextStyles.smallTextStyle.copyWith(color: Colors.grey),
+                                      contentPadding: EdgeInsets.symmetric(horizontal: 10),
+                                      errorStyle: AppTextStyles.regularTextStyle.copyWith(color: Colors.red),
+                                      // hintText: 'Please select expense',
+                                    ),
+                                    isEmpty: _selectedPlayerType == null,
+                                    child: DropdownButtonHideUnderline(
+                                      child: DropdownButton<String>(
+                                        value: _selectedPlayerType,
+                                        hint: Text('Filter by sport', style: AppTextStyles.smallTextStyle,),
+                                        isDense: true,
+                                        elevation: 0,
+                                        dropdownColor: Colors.white,
+                                        onChanged: (String? newValue) {
+                                          setState(() {
+                                            _selectedPlayerType = newValue;
+                                            // Reset data when filter changes
+                                            _users.clear();
+                                            _searchResults.clear();
+                                            _countryFilteredUsers.clear();
+                                            _lastDocument = null;
+                                            _lastCountryDoc = null;
+                                            _resetSearchPagination();
+                                            _hasMoreData = true;
+                                            _hasMoreSearchResults = true;
+                                            _hasMoreCountryResults = true;
+                                            _totalSearchCount = null;
+                                            _countryFilterCount = null;
+                                          });
+
+                                          // Reload data with new filter
+                                          if (_isInSearchMode) {
+                                            _performFirebaseSearch();
+                                          } else if (_isInCountryFilterMode) {
+                                            _loadUsersByCountry();
+                                          } else {
+                                            _loadUsers();
+                                          }
+                                        },
+                                        items: _playerTypes.map((String value) {
+                                          return DropdownMenuItem<String>(
+                                              value: value,
+                                              child: Text(value)
+                                          );
+                                        }).toList(),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),),
+                              Expanded(child: FormField<String>(
+                                builder: (FormFieldState<String> state) {
+                                  return InputDecorator(
+                                    decoration: InputDecoration(
+                                      enabledBorder: OutlineInputBorder(
+                                          borderSide: BorderSide(color: AppColors.textFieldFillColor)),
+                                      labelStyle: AppTextStyles.smallTextStyle,
+                                      hintStyle: AppTextStyles.smallTextStyle.copyWith(color: Colors.grey),
+                                      contentPadding: EdgeInsets.symmetric(horizontal: 10),
+                                      errorStyle: AppTextStyles.regularTextStyle.copyWith(color: Colors.red),
+                                      // hintText: 'Please select expense',
+                                    ),
+                                    isEmpty: _selectedCountry == null,
+                                    child: DropdownButtonHideUnderline(
+                                      child: DropdownButton<String>(
+                                        value: _selectedCountry,
+                                        hint: Text('Filter by county', style: AppTextStyles.smallTextStyle,),
+                                        isDense: true,
+                                        elevation: 0,
+                                        dropdownColor: Colors.white,
+                                        onChanged: (String? newValue) {
+                                          setState(() {
+                                            _selectedCountry = newValue;
+                                            _isInCountryFilterMode = newValue != null;
+
+                                            // Reset all data when filter changes
+                                            _users.clear();
+                                            _searchResults.clear();
+                                            _countryFilteredUsers.clear();
+                                            _lastDocument = null;
+                                            _lastCountryDoc = null;
+                                            _resetSearchPagination();
+                                            _hasMoreData = true;
+                                            _hasMoreCountryResults = true;
+                                            _totalSearchCount = null;
+                                            _countryFilterCount = null;
+                                          });
+
+                                          // Reload data based on mode
+                                          if (_isInSearchMode) {
+                                            _performFirebaseSearch();
+                                          } else if (_isInCountryFilterMode) {
+                                            _loadUsersByCountry();
+                                          } else {
+                                            _loadUsers();
+                                          }
+                                        },
+                                        items: _countries.map((String value) {
+                                          return DropdownMenuItem<String>(
+                                              value: value,
+                                              child: Text(value)
+                                          );
+                                        }).toList(),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),)
+                            ],
+                          ),
+                          FilterChip(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(99)
                               ),
-                            ),
-                          )),
-
-                          Expanded(child: FormField<String>(
-                            builder: (FormFieldState<String> state) {
-                              return InputDecorator(
-                                decoration: InputDecoration(
-                                  enabledBorder: OutlineInputBorder(
-                                      borderSide: BorderSide(color: AppColors.textFieldFillColor)),
-                                  labelStyle: AppTextStyles.smallTextStyle,
-                                  hintStyle: AppTextStyles.smallTextStyle.copyWith(color: Colors.grey),
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 10),
-                                  errorStyle: AppTextStyles.regularTextStyle.copyWith(color: Colors.red),
-                                  // hintText: 'Please select expense',
-                                ),
-                                isEmpty: _selectedPlayerType == null,
-                                child: DropdownButtonHideUnderline(
-                                  child: DropdownButton<String>(
-                                    value: _selectedPlayerType,
-                                    hint: Text('Filter by sport', style: AppTextStyles.smallTextStyle,),
-                                    isDense: true,
-                                    elevation: 0,
-                                    dropdownColor: Colors.white,
-                                    onChanged: (String? newValue) {
-                                      setState(() {
-                                        _selectedPlayerType = newValue;
-                                        // Reset data when filter changes
-                                        _users.clear();
-                                        _searchResults.clear();
-                                        _countryFilteredUsers.clear();
-                                        _lastDocument = null;
-                                        _lastCountryDoc = null;
-                                        _resetSearchPagination();
-                                        _hasMoreData = true;
-                                        _hasMoreSearchResults = true;
-                                        _hasMoreCountryResults = true;
-                                        _totalSearchCount = null;
-                                        _countryFilterCount = null;
-                                      });
-
-                                      // Reload data with new filter
-                                      if (_isInSearchMode) {
-                                        _performFirebaseSearch();
-                                      } else if (_isInCountryFilterMode) {
-                                        _loadUsersByCountry();
-                                      } else {
-                                        _loadUsers();
-                                      }
-                                    },
-                                    items: _playerTypes.map((String value) {
-                                      return DropdownMenuItem<String>(
-                                          value: value,
-                                          child: Text(value)
-                                      );
-                                    }).toList(),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),),
-                          Expanded(child: FormField<String>(
-                            builder: (FormFieldState<String> state) {
-                              return InputDecorator(
-                                decoration: InputDecoration(
-                                  enabledBorder: OutlineInputBorder(
-                                      borderSide: BorderSide(color: AppColors.textFieldFillColor)),
-                                  labelStyle: AppTextStyles.smallTextStyle,
-                                  hintStyle: AppTextStyles.smallTextStyle.copyWith(color: Colors.grey),
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 10),
-                                  errorStyle: AppTextStyles.regularTextStyle.copyWith(color: Colors.red),
-                                  // hintText: 'Please select expense',
-                                ),
-                                isEmpty: _selectedCountry == null,
-                                child: DropdownButtonHideUnderline(
-                                  child: DropdownButton<String>(
-                                    value: _selectedCountry,
-                                    hint: Text('Filter by county', style: AppTextStyles.smallTextStyle,),
-                                    isDense: true,
-                                    elevation: 0,
-                                    dropdownColor: Colors.white,
-                                    onChanged: (String? newValue) {
-                                      setState(() {
-                                        _selectedCountry = newValue;
-                                        _isInCountryFilterMode = newValue != null;
-                                        
-                                        // Reset all data when filter changes
-                                        _users.clear();
-                                        _searchResults.clear();
-                                        _countryFilteredUsers.clear();
-                                        _lastDocument = null;
-                                        _lastCountryDoc = null;
-                                        _resetSearchPagination();
-                                        _hasMoreData = true;
-                                        _hasMoreCountryResults = true;
-                                        _totalSearchCount = null;
-                                        _countryFilterCount = null;
-                                      });
-                                      
-                                      // Reload data based on mode
-                                      if (_isInSearchMode) {
-                                        _performFirebaseSearch();
-                                      } else if (_isInCountryFilterMode) {
-                                        _loadUsersByCountry();
-                                      } else {
-                                        _loadUsers();
-                                      }
-                                    },
-                                    items: _countries.map((String value) {
-                                      return DropdownMenuItem<String>(
-                                          value: value,
-                                          child: Text(value)
-                                      );
-                                    }).toList(),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),)
+                              // backgroundColor: _filterByState ? AppColors.primaryColor : ,
+                              label: Text("Filter results by state"),
+                              selected: _filterByState,
+                              onSelected: (val) {
+                                setState(() {
+                                  _filterByState = val;
+                                  _searchResults.clear();
+                                  _resetSearchPagination();
+                                  _totalSearchCount = null;
+                                });
+                                if (_isInSearchMode) {
+                                  _performFirebaseSearch();
+                                }
+                              })
                         ],
                       ),
                     ),
@@ -878,9 +906,11 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
     _lastUserNameDoc = null;
     _lastBioDoc = null;
     _lastLocationDoc = null;
+    _lastStateDoc = null;
     _hasMoreUserName = true;
     _hasMoreBio = true;
     _hasMoreLocation = true;
+    _hasMoreState = true;
   }
 
   Future<void> _performFirebaseSearch() async {
@@ -918,12 +948,14 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
     try {
       final String queryLower = query.toLowerCase();
 
-      // Perform parallel searches across all fields
-      final List<Future<List<UserModel>>> searchFutures = [
-        _searchUserNameField(query),
-        _searchBioField(queryLower),
-        _searchLocationField(queryLower),
-      ];
+      // Perform searches based on filter state
+      final List<Future<List<UserModel>>> searchFutures = _filterByState
+        ? [_searchStateField(queryLower)]  // Only state search when filter is enabled
+        : [  // Existing searches when filter is disabled
+            _searchUserNameField(query),
+            _searchBioField(queryLower),
+            _searchLocationField(queryLower),
+          ];
 
       final List<List<UserModel>> searchResultsLists = await Future.wait(searchFutures);
 
@@ -946,7 +978,9 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
       }
 
       // Check if we have more results available from any field
-      bool hasMoreResults = _hasMoreUserName || _hasMoreBio || _hasMoreLocation;
+      bool hasMoreResults = _filterByState 
+        ? _hasMoreState 
+        : (_hasMoreUserName || _hasMoreBio || _hasMoreLocation);
 
       setState(() {
         if (_searchResults.isEmpty) {
@@ -1081,6 +1115,41 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
     }
   }
 
+  Future<List<UserModel>> _searchStateField(String queryLower) async {
+    try {
+      if (!_hasMoreState) return [];
+
+      Query stateQuery = _firestore
+          .collection('users')
+          .orderBy('stateLower')
+          .where('stateLower', isGreaterThanOrEqualTo: queryLower)
+          .where('stateLower', isLessThan: queryLower + '\uf8ff')
+          .limit(_pageSize);
+
+      if (_lastStateDoc != null) {
+        stateQuery = stateQuery.startAfterDocument(_lastStateDoc!);
+      }
+
+      final QuerySnapshot stateSnapshot = await stateQuery.get();
+
+      if (stateSnapshot.docs.isNotEmpty) {
+        _lastStateDoc = stateSnapshot.docs.last;
+        _hasMoreState = stateSnapshot.docs.length == _pageSize;
+
+        return stateSnapshot.docs
+            .map((doc) => UserModel.fromMap(doc.data() as Map<String, dynamic>))
+            .toList();
+      } else {
+        _hasMoreState = false;
+        return [];
+      }
+    } catch (e) {
+      debugPrint('State search error: $e');
+      _hasMoreState = false;
+      return [];
+    }
+  }
+
   Future<void> _loadMoreSearchResults() async {
     if (_isSearching || !_hasMoreSearchResults) return;
 
@@ -1101,48 +1170,63 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
     try {
       final String queryLower = query.toLowerCase();
 
-      // Build count queries for all search fields
+      // Build count queries based on filter state
       List<Future<AggregateQuerySnapshot>> countFutures = [];
 
-      // UserName count query
-      Query userNameCountQuery = _firestore
-          .collection('users')
-          .where('userName', isGreaterThanOrEqualTo: query)
-          .where('userName', isLessThan: query + '\uf8ff');
+      if (_filterByState) {
+        // Only state count query when filter is enabled
+        Query stateCountQuery = _firestore
+            .collection('users')
+            .where('stateLower', isGreaterThanOrEqualTo: queryLower)
+            .where('stateLower', isLessThan: queryLower + '\uf8ff');
 
-      // Apply player type filter if selected
-      if (_selectedPlayerType != null) {
-        String fieldName = _getPlayerTypeFieldName(_selectedPlayerType!);
-        userNameCountQuery = userNameCountQuery.where(fieldName, isEqualTo: true);
+        if (_selectedPlayerType != null) {
+          String fieldName = _getPlayerTypeFieldName(_selectedPlayerType!);
+          stateCountQuery = stateCountQuery.where(fieldName, isEqualTo: true);
+        }
+
+        countFutures.add(stateCountQuery.count().get());
+      } else {
+        // Existing count queries when filter is disabled
+        // UserName count query
+        Query userNameCountQuery = _firestore
+            .collection('users')
+            .where('userName', isGreaterThanOrEqualTo: query)
+            .where('userName', isLessThan: query + '\uf8ff');
+
+        if (_selectedPlayerType != null) {
+          String fieldName = _getPlayerTypeFieldName(_selectedPlayerType!);
+          userNameCountQuery = userNameCountQuery.where(fieldName, isEqualTo: true);
+        }
+
+        countFutures.add(userNameCountQuery.count().get());
+
+        // Bio count query
+        Query bioCountQuery = _firestore
+            .collection('users')
+            .where('bio', isGreaterThanOrEqualTo: queryLower)
+            .where('bio', isLessThan: queryLower + '\uf8ff');
+
+        if (_selectedPlayerType != null) {
+          String fieldName = _getPlayerTypeFieldName(_selectedPlayerType!);
+          bioCountQuery = bioCountQuery.where(fieldName, isEqualTo: true);
+        }
+
+        countFutures.add(bioCountQuery.count().get());
+
+        // Location count query
+        Query locationCountQuery = _firestore
+            .collection('users')
+            .where('countryLowerCase', isGreaterThanOrEqualTo: queryLower)
+            .where('countryLowerCase', isLessThan: queryLower + '\uf8ff');
+
+        if (_selectedPlayerType != null) {
+          String fieldName = _getPlayerTypeFieldName(_selectedPlayerType!);
+          locationCountQuery = locationCountQuery.where(fieldName, isEqualTo: true);
+        }
+
+        countFutures.add(locationCountQuery.count().get());
       }
-
-      countFutures.add(userNameCountQuery.count().get());
-
-      // Bio count query
-      Query bioCountQuery = _firestore
-          .collection('users')
-          .where('bio', isGreaterThanOrEqualTo: queryLower)
-          .where('bio', isLessThan: queryLower + '\uf8ff');
-
-      if (_selectedPlayerType != null) {
-        String fieldName = _getPlayerTypeFieldName(_selectedPlayerType!);
-        bioCountQuery = bioCountQuery.where(fieldName, isEqualTo: true);
-      }
-
-      countFutures.add(bioCountQuery.count().get());
-
-      // Location count query (array-contains)
-      Query locationCountQuery = _firestore
-          .collection('users')
-          .where('countryLowerCase', isGreaterThanOrEqualTo: queryLower)
-          .where('countryLowerCase', isLessThan: queryLower + '\uf8ff');
-
-      if (_selectedPlayerType != null) {
-        String fieldName = _getPlayerTypeFieldName(_selectedPlayerType!);
-        locationCountQuery = locationCountQuery.where(fieldName, isEqualTo: true);
-      }
-
-      countFutures.add(locationCountQuery.count().get());
 
       // Execute all count queries in parallel
       final List<AggregateQuerySnapshot> countResults = await Future.wait(countFutures);
