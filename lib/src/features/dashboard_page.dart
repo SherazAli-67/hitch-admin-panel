@@ -125,8 +125,24 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
                         children: [
                           GestureDetector(
                               onTap:()async{
-                                // await FirebaseFirestore.instance.collection('location_trigger').add({'lowerCaseTest' :  'test'});
-                                // debugPrint("Record added");
+                          /*      await FirebaseFirestore.instance.collection('test').add({'test2' : 'Test1'});
+                                debugPrint("Record added");*/
+                             /*   debugPrint("Record tap");
+                               QuerySnapshot  query = await FirebaseFirestore.instance.collection('hitch_user_states').get();
+                               debugPrint("Records found: ${query.size}");
+                               int total = 0;
+                               query.docs.forEach((doc) async {
+                                 String docID = doc.id;
+                                 final users = await FirebaseFirestore.instance.collection('hitch_user_states').doc(docID).collection('users').get();
+                                 final map = doc.data() as Map<String,dynamic>;
+
+                                 debugPrint("${users.size} found for ${map['state']}");
+                                 total+= users.size;
+                                 await FirebaseFirestore.instance.collection('hitch_user_states').doc(docID).update({
+                                   'totalUsers': users.size
+                                 });
+                                 debugPrint("Total: $total");
+                               });*/
                               },
                               child: Text("All Users", style: AppTextStyles.largeTextStyle,)),
                           Consumer<HitchCountProvider>(builder: (_, provider, _){

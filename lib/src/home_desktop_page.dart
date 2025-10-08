@@ -4,6 +4,7 @@ import 'package:hitch_tracker/src/features/chats_triggered_page.dart';
 import 'package:hitch_tracker/src/features/dashboard_page.dart';
 import 'package:hitch_tracker/src/features/requested_hitches_page.dart';
 import 'package:hitch_tracker/src/features/accepted_hitch_users.dart';
+import 'package:hitch_tracker/src/features/users_by_state.dart';
 import 'package:hitch_tracker/src/providers/main_menu_tabchange_provider.dart';
 import 'package:hitch_tracker/src/res/app_colors.dart';
 import 'package:hitch_tracker/src/res/app_textstyles.dart';
@@ -30,6 +31,7 @@ class _HomeDesktopPageState extends State<HomeDesktopPage> {
       RequestedHitchesPage(),
       AcceptedHitchRequestsPage(),
       ChatsTriggeredPage(),
+      UsersByState()
     ];
   }
 
@@ -127,6 +129,15 @@ class _HomeDesktopPageState extends State<HomeDesktopPage> {
                                     provider: provider,
                                     isExpanded: isExpanded,
                                     isHovered: hoveredIndex == 3
+                                  ),
+                                  _buildMenuItemWidget(
+                                      icon: Icons.language,
+                                      title: "Users by state",
+                                      tabIndex: 4,
+                                      selectedIndex: selectedIndex,
+                                      provider: provider,
+                                      isExpanded: isExpanded,
+                                      isHovered: hoveredIndex == 4
                                   ),
                                 ],
                               ),

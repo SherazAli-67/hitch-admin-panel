@@ -7,17 +7,21 @@ class HitchCountProvider extends ChangeNotifier{
   final String _totalUsersKey = 'totalHitchUsers';
   final String _totalHitchChatsKey = 'totalHitchChats';
   final String _totalHitchAcceptedKey = 'totalHitchAccepted';
+  final String _totalStatesKey = 'totalStates';
 
   int _totalUsers = 1;
   int _totalHitchRequests = 1;
   int _totalChats = 1;
   int _totalHitchAcceptedRequests = 1;
 
+  int _totalStates = 1;
+
 
   int get totalUsers => _totalUsers;
   int get totalChats => _totalChats;
   int get totalHitchRequests => _totalHitchRequests;
   int get totalHitchAccepted => _totalHitchAcceptedRequests;
+  int get totalStates => _totalStates;
 
   HitchCountProvider(){
     _initHitchCount();
@@ -29,6 +33,7 @@ class HitchCountProvider extends ChangeNotifier{
     _totalHitchRequests = prefs.getInt(_totalHitchRequestsKey) ?? 1;
     _totalChats = prefs.getInt(_totalHitchChatsKey) ?? 1;
     _totalHitchAcceptedRequests = prefs.getInt(_totalHitchAcceptedKey) ?? 1;
+    _totalStates = prefs.getInt(_totalStatesKey) ?? 1;
     notifyListeners();
 
     _initFromNetwork();
@@ -40,12 +45,14 @@ class HitchCountProvider extends ChangeNotifier{
       HitchesService.getTotalChatsCount(),
       HitchesService.getTotalHitchRequestCount(),
       HitchesService.getTotalHitchAcceptedCount(),
+      HitchesService.getTotalStatesCount(),
     ]);
 
     _totalUsers = result.first;
     _totalChats = result[1];
     _totalHitchRequests = result[2];
     _totalHitchAcceptedRequests = result[3];
+    _totalStates = result[4];
     notifyListeners();
 
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -53,6 +60,7 @@ class HitchCountProvider extends ChangeNotifier{
     prefs.setInt(_totalHitchChatsKey, _totalChats);
     prefs.setInt(_totalHitchRequestsKey, _totalHitchRequests);
     prefs.setInt(_totalHitchAcceptedKey, _totalHitchAcceptedRequests);
+    prefs.setInt(_totalStatesKey, _totalStates);
 
   }
 }

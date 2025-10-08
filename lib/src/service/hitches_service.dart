@@ -36,6 +36,12 @@ class HitchesService {
 
     return 1;
   }
+  static Future<int> getTotalStatesCount()async{
+    final results = await _fireStoreColRef.collection('hitch_user_states').get();
+
+    return results.size;
+  }
+
 
   static Future<String> getUserLocationFromLatLng(double latitude, double longitude) async {
     String address = 'Unknown Location';
