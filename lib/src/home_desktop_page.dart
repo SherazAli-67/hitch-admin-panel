@@ -28,7 +28,7 @@ class _HomeDesktopPageState extends State<HomeDesktopPage> {
     // Initialize all page widgets once
     _pages = [
       DashboardPage(),
-      RequestedHitchesPage(),
+      // RequestedHitchesPage(),
       AcceptedHitchRequestsPage(),
       ChatsTriggeredPage(),
       UsersByState()
@@ -103,7 +103,7 @@ class _HomeDesktopPageState extends State<HomeDesktopPage> {
                                     isExpanded: isExpanded,
                                     isHovered: hoveredIndex == 0
                                   ),
-                                  _buildMenuItemWidget(
+                                  /*_buildMenuItemWidget(
                                     icon: Icons.person, 
                                     title: "Requested Hitches", 
                                     tabIndex: 1, 
@@ -111,33 +111,33 @@ class _HomeDesktopPageState extends State<HomeDesktopPage> {
                                     provider: provider,
                                     isExpanded: isExpanded,
                                     isHovered: hoveredIndex == 1
-                                  ),
+                                  ),*/
                                   _buildMenuItemWidget(
                                     icon: Icons.request_page, 
                                     title: "Accepted Hitches", 
-                                    tabIndex: 2, 
+                                    tabIndex: 1,
+                                    selectedIndex: selectedIndex, 
+                                    provider: provider,
+                                    isExpanded: isExpanded,
+                                    isHovered: hoveredIndex == 1
+                                  ),
+                                  _buildMenuItemWidget(
+                                    icon: Icons.chat_bubble_outline_rounded, 
+                                    title: "Chats", 
+                                    tabIndex: 2,
                                     selectedIndex: selectedIndex, 
                                     provider: provider,
                                     isExpanded: isExpanded,
                                     isHovered: hoveredIndex == 2
                                   ),
                                   _buildMenuItemWidget(
-                                    icon: Icons.chat_bubble_outline_rounded, 
-                                    title: "Chats", 
-                                    tabIndex: 3, 
-                                    selectedIndex: selectedIndex, 
-                                    provider: provider,
-                                    isExpanded: isExpanded,
-                                    isHovered: hoveredIndex == 3
-                                  ),
-                                  _buildMenuItemWidget(
                                       icon: Icons.language,
                                       title: "Users by state",
-                                      tabIndex: 4,
+                                      tabIndex: 3,
                                       selectedIndex: selectedIndex,
                                       provider: provider,
                                       isExpanded: isExpanded,
-                                      isHovered: hoveredIndex == 4
+                                      isHovered: hoveredIndex == 3
                                   ),
                                 ],
                               ),
