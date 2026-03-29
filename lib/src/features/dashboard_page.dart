@@ -1,6 +1,11 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:file_saver/file_saver.dart';
 import 'package:flutter/material.dart';
+import 'package:hitch_tracker/src/helpers/date_time_helper.dart';
 import 'package:hitch_tracker/src/models/user_model.dart';
 import 'package:hitch_tracker/src/providers/hitch_count_provider.dart';
 import 'package:hitch_tracker/src/res/app_colors.dart';
@@ -70,8 +75,10 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
   List<UserModel> _countryFilteredUsers = [];
   int? _countryFilterCount;
   bool _isLoadingCountryFilter = false;
+  bool _isMonthlyExporting = false;
 
   static const int _pageSize = 20;
+  static const int _monthlyExportBatchSize = 500;
 
   final List<String> _countries = [
     'United States',
@@ -101,8 +108,6 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
     super.dispose();
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
@@ -120,38 +125,56 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
-                        spacing: 20,
-                        // mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          GestureDetector(
-                              onTap:()async{
-                          /*      await FirebaseFirestore.instance.collection('test').add({'test2' : 'Test1'});
-                                debugPrint("Record added");*/
-                             /*   debugPrint("Record tap");
-                               QuerySnapshot  query = await FirebaseFirestore.instance.collection('hitch_user_states').get();
-                               debugPrint("Records found: ${query.size}");
-                               int total = 0;
-                               query.docs.forEach((doc) async {
-                                 String docID = doc.id;
-                                 final users = await FirebaseFirestore.instance.collection('hitch_user_states').doc(docID).collection('users').get();
-                                 final map = doc.data() as Map<String,dynamic>;
-
-                                 debugPrint("${users.size} found for ${map['state']}");
-                                 total+= users.size;
-                                 await FirebaseFirestore.instance.collection('hitch_user_states').doc(docID).update({
-                                   'totalUsers': users.size
-                                 });
-                                 debugPrint("Total: $total");
-                               });*/
-                              },
-                              child: Text("All Users", style: AppTextStyles.largeTextStyle,)),
-                          Consumer<HitchCountProvider>(builder: (_, provider, _){
-                            return Text(provider.totalUsers == 1 ? "" : '${provider.totalUsers}', style: AppTextStyles.headingTextStyle.copyWith(color: AppColors.primaryColor),);
-                          }),
-
+                          Expanded(
+                            child: Row(
+                              spacing: 20,
+                              // mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                GestureDetector(
+                                    onTap:()async{
+                                /*      await FirebaseFirestore.instance.collection('test').add({'test2' : 'Test1'});
+                                      debugPrint("Record added");*/
+                                   /*   debugPrint("Record tap");
+                                     QuerySnapshot  query = await FirebaseFirestore.instance.collection('hitch_user_states').get();
+                                     debugPrint("Records found: ${query.size}");
+                                     int total = 0;
+                                     query.docs.forEach((doc) async {
+                                       String docID = doc.id;
+                                       final users = await FirebaseFirestore.instance.collection('hitch_user_states').doc(docID).collection('users').get();
+                                       final map = doc.data() as Map<String,dynamic>;
+                            
+                                       debugPrint("${users.size} found for ${map['state']}");
+                                       total+= users.size;
+                                       await FirebaseFirestore.instance.collection('hitch_user_states').doc(docID).update({
+                                         'totalUsers': users.size
+                                       });
+                                       debugPrint("Total: $total");
+                                     });*/
+                                    },
+                                    child: Text("All Users", style: AppTextStyles.largeTextStyle,)),
+                                Consumer<HitchCountProvider>(builder: (_, provider, _){
+                                  return Text(provider.totalUsers == 1 ? "" : '${provider.totalUsers}', style: AppTextStyles.headingTextStyle.copyWith(color: AppColors.primaryColor),);
+                                }),
+                            
+                              ],
+                            ),
+                          ),
+                          PopupMenuButton<String>(
+                              icon: Icon(Icons.more_vert_rounded),
+                              position: PopupMenuPosition.under,
+                              color: Colors.white,
+                              onSelected: (_) => extractDownloadMonthlyUser(),
+                              itemBuilder: (ctx) {
+                                return [
+                                  PopupMenuItem<String>(
+                                    value: 'monthly_users',
+                                    child: Text("Pull Monthly Users"),
+                                  ),
+                                ];
+                              })
                         ],
                       ),
-
                       Text('A comprehensive list of all users on the Hitch Platform', style: AppTextStyles.smallTextStyle,)
                     ],
                   ),
@@ -1287,4 +1310,111 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
       await _loadUsers();
     }
   }*/
+
+  String _csvCell(Object? value) {
+    final s = value?.toString() ?? '';
+    if (s.contains(',') ||
+        s.contains('"') ||
+        s.contains('\n') ||
+        s.contains('\r')) {
+      return '"${s.replaceAll('"', '""')}"';
+    }
+    return s;
+  }
+
+  String _csvLine(List<Object?> cells) {
+    return cells.map(_csvCell).join(',');
+  }
+
+  Future<void> extractDownloadMonthlyUser() async {
+    if (_isMonthlyExporting) return;
+    setState(() => _isMonthlyExporting = true);
+    try {
+      final now = DateTime.now().toUtc();
+      final start = DateTime.utc(now.year, now.month, 1);
+      final end = DateTime.utc(now.year, now.month + 1, 1);
+      final lines = <String>[
+        _csvLine([
+          'index',
+          'userID',
+          'userName',
+          'emailAddress',
+          'gender',
+          'playerTypeCoach',
+          'isAvailableDaily',
+          'isAvailableInMorning',
+          'country',
+          'createdAt'
+        ]),
+      ];
+      DocumentSnapshot? lastDoc;
+      var index = 0;
+      while (true) {
+        Query<Map<String, dynamic>> q = _firestore
+            .collection('users')
+            .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(start))
+            .where('createdAt', isLessThan: Timestamp.fromDate(end))
+            .orderBy('createdAt')
+            .limit(_monthlyExportBatchSize);
+        if (lastDoc != null) {
+          q = q.startAfterDocument(lastDoc);
+        }
+        final snapshot = await q.get();
+        if (snapshot.docs.isEmpty) break;
+        for (final doc in snapshot.docs) {
+          index++;
+          final data = doc.data();
+          final user = UserModel.fromMap(data);
+          String createdAt = '';
+          if(data['createdAt'] != null){
+            Timestamp timestamp = doc['createdAt'];
+            createdAt = DateTimeHelper.formatDateTime(timestamp.toDate());
+          }
+          lines.add(_csvLine([
+            index,
+            user.userID,
+            user.userName,
+            user.emailAddress,
+            user.gender ?? '',
+            user.playerTypeCoach,
+            user.isAvailableDaily,
+            user.isAvailableInMorning,
+            user.country,
+            createdAt
+          ]));
+        }
+        lastDoc = snapshot.docs.last;
+        if (snapshot.docs.length < _monthlyExportBatchSize) break;
+      }
+      final csv = lines.join('\n');
+      final name =
+          'hitch_monthly_users_${now.year}_${now.month.toString().padLeft(2, '0')}';
+      await FileSaver.instance.saveFile(
+        name: name,
+        bytes: Uint8List.fromList(utf8.encode(csv)),
+        ext: 'csv',
+        mimeType: MimeType.csv,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            index == 0
+                ? 'No users found for this month.'
+                : 'Exported $index user${index == 1 ? '' : 's'}.',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Export failed: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isMonthlyExporting = false);
+      }
+    }
+  }
 }
