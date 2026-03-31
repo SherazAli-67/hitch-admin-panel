@@ -1,8 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:hitch_tracker/src/models/user_by_state_model.dart';
 import 'package:hitch_tracker/src/res/app_colors.dart';
 import 'package:hitch_tracker/src/res/app_textstyles.dart';
+import 'package:hitch_tracker/src/service/hitches_service.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
 
@@ -21,18 +21,16 @@ class _UsersByStateState extends State<UsersByState> with AutomaticKeepAliveClie
   @override
   bool get wantKeepAlive => true;
 
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
+  List<UserByStateModel> _allStates = [];
   List<UserByStateModel> _states = [];
   List<UserByStateModel> _searchResults = [];
   bool _isLoading = false;
   bool _isSearching = false;
   bool _hasMoreData = true;
   bool _hasMoreSearchResults = true;
-  DocumentSnapshot? _lastDocument;
-  DocumentSnapshot? _lastSearchDocument;
   Timer? _debounceTimer;
   String _searchQuery = '';
   bool _isInSearchMode = false;
@@ -384,44 +382,31 @@ class _UsersByStateState extends State<UsersByState> with AutomaticKeepAliveClie
     setState(()=> _isLoading = true);
 
     try {
-      Query query = _firestore
-          .collection('hitch_user_states')
-          .orderBy('totalUsers', descending: true)
-          .limit(_pageSize);
+      final rows = await HitchesService.getUsersByStates();
+      final List<UserByStateModel> loadedStates = rows.map((row) {
+        return UserByStateModel(
+          state: (row['state'] ?? '').toString(),
+          stateShortName: (row['shortName'] ?? '').toString(),
+          totalUsers: (row['count'] as int?) ?? 0,
+        );
+      }).toList()
+        ..sort((a, b) => b.totalUsers.compareTo(a.totalUsers));
 
-      if (_lastDocument != null) {
-        query = query.startAfterDocument(_lastDocument!);
-      }
-
-      final QuerySnapshot snapshot = await query.get();
-      debugPrint("States: ${snapshot.docs.length}");
-      if (snapshot.docs.isNotEmpty) {
-        final List<UserByStateModel> newStates = snapshot.docs
-            .map((doc) => UserByStateModel.fromMap(doc.data() as Map<String, dynamic>))
-            .toList();
-
-        setState(() {
-          if (_lastDocument == null) {
-            _states = newStates;
-          } else {
-            _states.addAll(newStates);
-          }
-          _lastDocument = snapshot.docs.last;
-          _hasMoreData = snapshot.docs.length == _pageSize;
-        });
-      } else {
-        setState(()=>  _hasMoreData = false);
-      }
+      setState(() {
+        _allStates = loadedStates;
+        _states = _allStates.take(_pageSize).toList();
+        _hasMoreData = _allStates.length > _states.length;
+      });
     } catch (e) {
-      // Handle error silently for now
       debugPrint('Error loading states: $e');
+      setState(() {
+        _allStates = [];
+        _states = [];
+        _hasMoreData = false;
+      });
     } finally {
       setState(()=> _isLoading = false);
     }
-  }
-
-  Future<void> _loadMoreStates() async {
-    await _loadStates();
   }
 
   Future<void> _performFirebaseSearch() async {
@@ -429,7 +414,6 @@ class _UsersByStateState extends State<UsersByState> with AutomaticKeepAliveClie
       setState(() {
         _isInSearchMode = false;
         _searchResults.clear();
-        _lastSearchDocument = null;
         _hasMoreSearchResults = true;
         _totalSearchCount = null;
       });
@@ -444,12 +428,10 @@ class _UsersByStateState extends State<UsersByState> with AutomaticKeepAliveClie
     setState(() {
       _isSearching = true;
       _searchResults.clear();
-      _lastSearchDocument = null;
       _hasMoreSearchResults = true;
       _totalSearchCount = null;
     });
 
-    // Start count query in parallel
     _getSearchResultsCount(_searchQuery);
 
     await _searchInFirebase(_searchQuery);
@@ -457,37 +439,17 @@ class _UsersByStateState extends State<UsersByState> with AutomaticKeepAliveClie
 
   Future<void> _searchInFirebase(String query) async {
     try {
-      String lowerQuery = query.toLowerCase();
-      // Search by state name (primary search)
-      Query searchQuery = _firestore
-          .collection('hitch_user_states')
-          .orderBy('stateLowerCase')
-          .where('stateLowerCase', isGreaterThanOrEqualTo: query)
-          .where('stateLowerCase', isLessThan: query + '\uf8ff')
-          .limit(_pageSize);
-
-      if (_lastSearchDocument != null) {
-        searchQuery = searchQuery.startAfterDocument(_lastSearchDocument!);
-      }
-
-      final QuerySnapshot snapshot = await searchQuery.get();
-      List<UserByStateModel> results = [];
-
-      if (snapshot.docs.isNotEmpty) {
-        results = snapshot.docs
-            .map((doc) => UserByStateModel.fromMap(doc.data() as Map<String, dynamic>))
-            .toList();
-
-        _lastSearchDocument = snapshot.docs.last;
-      }
+      final lowerQuery = query.toLowerCase();
+      final filtered = _allStates.where((state) {
+        final stateName = state.state.toLowerCase();
+        final shortName = state.stateShortName.toLowerCase();
+        return stateName.contains(lowerQuery) || shortName.contains(lowerQuery);
+      }).toList()
+        ..sort((a, b) => b.totalUsers.compareTo(a.totalUsers));
 
       setState(() {
-        if (_lastSearchDocument == null || _searchResults.isEmpty) {
-          _searchResults = results;
-        } else {
-          _searchResults.addAll(results);
-        }
-        _hasMoreSearchResults = snapshot.docs.length == _pageSize;
+        _searchResults = filtered.take(_pageSize).toList();
+        _hasMoreSearchResults = filtered.length > _searchResults.length;
         _isSearching = false;
       });
 
@@ -503,7 +465,19 @@ class _UsersByStateState extends State<UsersByState> with AutomaticKeepAliveClie
 
   Future<void> _loadMoreSearchResults() async {
     if (_isSearching || !_hasMoreSearchResults) return;
-    await _searchInFirebase(_searchQuery);
+    final lowerQuery = _searchQuery.toLowerCase();
+    final filtered = _allStates.where((state) {
+      final stateName = state.state.toLowerCase();
+      final shortName = state.stateShortName.toLowerCase();
+      return stateName.contains(lowerQuery) || shortName.contains(lowerQuery);
+    }).toList()
+      ..sort((a, b) => b.totalUsers.compareTo(a.totalUsers));
+
+    final nextCount = (_searchResults.length + _pageSize).clamp(0, filtered.length);
+    setState(() {
+      _searchResults = filtered.take(nextCount).toList();
+      _hasMoreSearchResults = _searchResults.length < filtered.length;
+    });
   }
 
   Future<void> _getSearchResultsCount(String query) async {
@@ -514,16 +488,15 @@ class _UsersByStateState extends State<UsersByState> with AutomaticKeepAliveClie
     });
 
     try {
-      // Search count query for state field
-      Query countQuery = _firestore
-          .collection('hitch_user_states')
-          .where('state', isGreaterThanOrEqualTo: query)
-          .where('state', isLessThan: query + '\uf8ff');
-
-      final AggregateQuerySnapshot countResult = await countQuery.count().get();
+      final lowerQuery = query.toLowerCase();
+      final countResult = _allStates.where((state) {
+        final stateName = state.state.toLowerCase();
+        final shortName = state.stateShortName.toLowerCase();
+        return stateName.contains(lowerQuery) || shortName.contains(lowerQuery);
+      }).length;
 
       setState(() {
-        _totalSearchCount = countResult.count ?? 0;
+        _totalSearchCount = countResult;
         _isCountLoading = false;
       });
 
@@ -534,5 +507,14 @@ class _UsersByStateState extends State<UsersByState> with AutomaticKeepAliveClie
         _totalSearchCount = null;
       });
     }
+  }
+
+  Future<void> _loadMoreStates() async {
+    if (_isLoading || !_hasMoreData) return;
+    final nextCount = (_states.length + _pageSize).clamp(0, _allStates.length);
+    setState(() {
+      _states = _allStates.take(nextCount).toList();
+      _hasMoreData = _states.length < _allStates.length;
+    });
   }
 }

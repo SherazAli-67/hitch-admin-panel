@@ -46,6 +46,7 @@ class HitchCountProvider extends ChangeNotifier{
       HitchesService.getTotalHitchRequestCount(),
       HitchesService.getTotalHitchAcceptedCount(),
       HitchesService.getTotalStatesCount(),
+
     ]);
 
     _totalUsers = result.first;

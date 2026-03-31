@@ -37,11 +37,30 @@ class HitchesService {
     return 1;
   }
   static Future<int> getTotalStatesCount()async{
-    final results = await _fireStoreColRef.collection('hitch_user_states').get();
-
-    return results.size;
+    final results = await _fireStoreColRef.collection('hitch_user_states').count().get();
+    return results.count ?? 0;
   }
 
+  static Future<List<Map<String, dynamic>>> getUsersByStates()async{
+    List<Map<String, dynamic>> usersByState = [];
+    final querySnap = await _fireStoreColRef.collection('hitch_user_states').get();
+    for (var doc in querySnap.docs) {
+      final count = await _fireStoreColRef.collection('hitch_user_states').doc(doc.id).collection('users').get();
+      usersByState.add({
+        'state' : doc.data()['state'] ?? '',
+        'shortName' : doc.data()['stateShortName'] ?? '',
+        'count' : count.size
+      });
+    }
+     /*final count = await _fireStoreColRef.collection('hitch_user_states').doc(doc.id).collection('users').get();
+      usersByState.add({
+        'state' : doc.data()['state'] ?? '',
+        'shortName' : doc.data()['stateShortName'] ?? '',
+        'count' : count.size
+      });
+    }*/
+    return usersByState;
+  }
 
   static Future<String> getUserLocationFromLatLng(double latitude, double longitude) async {
     String address = 'Unknown Location';
