@@ -42,23 +42,19 @@ class HitchesService {
   }
 
   static Future<List<Map<String, dynamic>>> getUsersByStates()async{
+    num total = 0;
     List<Map<String, dynamic>> usersByState = [];
-    final querySnap = await _fireStoreColRef.collection('hitch_user_states').get();
+    final querySnap = await _fireStoreColRef.collection('users_by_state').get();
     for (var doc in querySnap.docs) {
-      final count = await _fireStoreColRef.collection('hitch_user_states').doc(doc.id).collection('users').get();
       usersByState.add({
         'state' : doc.data()['state'] ?? '',
         'shortName' : doc.data()['stateShortName'] ?? '',
-        'count' : count.size
+        'count' : doc.data()['totalUsers'] ?? 0
       });
+      total+= doc.data()['totalUsers'] ?? 0;
     }
-     /*final count = await _fireStoreColRef.collection('hitch_user_states').doc(doc.id).collection('users').get();
-      usersByState.add({
-        'state' : doc.data()['state'] ?? '',
-        'shortName' : doc.data()['stateShortName'] ?? '',
-        'count' : count.size
-      });
-    }*/
+    debugPrint("Total: $total");
+
     return usersByState;
   }
 

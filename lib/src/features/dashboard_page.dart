@@ -1327,22 +1327,17 @@ class _DashboardPageState extends State<DashboardPage> with AutomaticKeepAliveCl
   }
 
   Future<void> extractDownloadMonthlyUser() async {
-   /*final querySnap = await FirebaseFirestore.instance.collection("hitch_user_states").get();
-   debugPrint("Total: ${querySnap.size}");
-   int totalUsers = 0;
+  /*  final db = FirebaseFirestore.instance;
+   final querySnap = await db.collection("users").get();
    for (var doc in querySnap.docs) {
-    final count = await FirebaseFirestore.instance.collection("hitch_user_states").doc(doc.id).collection('users').count().get();
-    debugPrint("State: ${doc.data()['state']}, Users: ${count.count}");
-    totalUsers+=  count.count?.toInt() ?? 0;
+     await db.collection("backfill_queue").doc(doc.id).set({
+       'userId': doc.id,
+       // 'createdAt': admin.firestore.FieldValue.serverTimestamp(),
+     });
+
+     debugPrint("Queued: ${doc.id}");
    }
-   debugPrint("Total: $totalUsers");*/
-   /*await FirebaseFirestore.instance.collection("backfill_jobs").add(
-        {
-          "status": "queued",
-          "reset": true
-        }
-    );
-   debugPrint("Added");*/
+   debugPrint("Queued all: ${querySnap.size}");*/
 
     if (_isMonthlyExporting) return;
     setState(() => _isMonthlyExporting = true);
